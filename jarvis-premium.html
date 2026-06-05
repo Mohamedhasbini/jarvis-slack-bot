@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS - Premium Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff41;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .header {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(0, 255, 65, 0.8);
+        }
+
+        .header h1 {
+            font-size: 3em;
+            letter-spacing: 5px;
+            margin: 0;
+            font-weight: bold;
+            color: #00ff41;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 0.8em;
+            color: #888;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+            padding: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            pointer-events: auto;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .status-line {
+            font-size: 0.9em;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-icon {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background: #00ff41;
+            animation: pulse 1s infinite;
+        }
+
+        .status-icon.inactive {
+            background: #444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .listening {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .listening-indicator {
+            font-size: 2em;
+            margin-bottom: 15px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .listening-text {
+            font-size: 1.2em;
+            color: #00ff41;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.8);
+        }
+
+        .transcription {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ff41;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            max-height: 300px;
+            overflow-y: auto;
+            pointer-events: auto;
+            display: none;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+            z-index: 20;
+        }
+
+        .transcription.active {
+            display: block;
+        }
+
+        .transcription-label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .transcription-text {
+            font-size: 1.2em;
+            color: #00ff41;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .processing-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .processing-spinner.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 2px solid #00ff41;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .response-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ff41;
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 700px;
+            max-height: 400px;
+            overflow-y: auto;
+            pointer-events: auto;
+            display: none;
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.6);
+            z-index: 20;
+        }
+
+        .response-box.active {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -45%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .response-label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .response-text {
+            font-size: 1em;
+            color: #00ff41;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .corner-info {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 0.8em;
+            color: #666;
+            text-align: right;
+            pointer-events: none;
+        }
+
+        .corner-info div {
+            margin: 5px 0;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border-radius: 3px;
+        }
+
+        .status-bar { scrollbar-width: thin; scrollbar-color: #00ff41 rgba(0, 0, 0, 0.5); }
+        .transcription { scrollbar-width: thin; scrollbar-color: #00ff41 rgba(0, 0, 0, 0.5); }
+        .response-box { scrollbar-width: thin; scrollbar-color: #00ff41 rgba(0, 0, 0, 0.5); }
+
+        .error-message {
+            color: #ff4444;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="ui-overlay">
+        <div class="header">
+            <h1>⚙️ JARVIS</h1>
+            <div class="subtitle">DISTRIBUTED INTELLIGENCE NETWORK</div>
+        </div>
+
+        <div class="corner-info">
+            <div id="systemStatus">ONLINE</div>
+            <div id="listenerStatus">AWAITING DIRECTIVE</div>
+        </div>
+
+        <div class="listening" id="listeningUI">
+            <div class="listening-indicator">🎤</div>
+            <div class="listening-text" id="listeningText">LISTENING...</div>
+        </div>
+
+        <div class="transcription scrollbar-custom" id="transcriptionBox">
+            <div class="transcription-label">YOU:</div>
+            <div class="transcription-text" id="transcriptionText"></div>
+            <div class="processing-spinner" id="processingSpinner">
+                <div class="spinner"></div>
+                <p>PROCESSING DIRECTIVE...</p>
+            </div>
+        </div>
+
+        <div class="response-box scrollbar-custom" id="responseBox">
+            <div class="response-label">JARVIS:</div>
+            <div class="response-text" id="responseText"></div>
+        </div>
+
+        <div class="status-bar scrollbar-custom">
+            <div class="status-line">
+                <span class="status-icon"></span>
+                <span>Speech Recognition: <span id="srStatus">READY</span></span>
+            </div>
+            <div class="status-line">
+                <span class="status-icon" id="apiIcon"></span>
+                <span>API Connection: <span id="apiStatus">CONNECTED</span></span>
+            </div>
+            <div class="status-line">
+                <span class="status-icon"></span>
+                <span>Network Nodes: <span id="nodeCount">24</span></span>
+            </div>
+            <div class="status-line" id="errorLine" style="display:none;">
+                <span class="status-icon inactive"></span>
+                <span class="error-message" id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Atom Network Visualization
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 1);
+        document.body.appendChild(renderer.domElement);
+        renderer.domElement.style.position = 'fixed';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+
+        camera.position.z = 50;
+
+        // Create atom nodes
+        const nodes = [];
+        const nodeCount = 24;
+
+        for (let i = 0; i < nodeCount; i++) {
+            const angle = (i / nodeCount) * Math.PI * 2;
+            const radius = 30 + Math.random() * 10;
+
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00ff41,
+                emissive: 0x00ff41,
+                emissiveIntensity: 0.8
+            });
+            const sphere = new THREE.Mesh(geometry, material);
+
+            sphere.position.x = Math.cos(angle) * radius;
+            sphere.position.y = Math.sin(angle) * radius;
+            sphere.position.z = (Math.random() - 0.5) * 20;
+
+            sphere.userData = {
+                originalPos: sphere.position.clone(),
+                angle: angle,
+                radius: radius,
+                speed: 0.001 + Math.random() * 0.003
+            };
+
+            scene.add(sphere);
+            nodes.push(sphere);
+        }
+
+        // Create connections between nodes
+        const lines = [];
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < Math.min(i + 4, nodes.length); j++) {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array([
+                    nodes[i].position.x, nodes[i].position.y, nodes[i].position.z,
+                    nodes[j].position.x, nodes[j].position.y, nodes[j].position.z
+                ]);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.LineBasicMaterial({
+                    color: 0x00ff41,
+                    linewidth: 1,
+                    transparent: true,
+                    opacity: 0.3
+                });
+
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+                lines.push({ line, node1: nodes[i], node2: nodes[j] });
+            }
+        }
+
+        // Lighting
+        const light = new THREE.PointLight(0x00ff41, 1, 100);
+        light.position.set(50, 50, 50);
+        scene.add(light);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate and animate nodes
+            nodes.forEach(node => {
+                node.userData.angle += node.userData.speed;
+                node.position.x = Math.cos(node.userData.angle) * node.userData.radius;
+                node.position.y = Math.sin(node.userData.angle) * node.userData.radius;
+                node.rotation.x += 0.002;
+                node.rotation.y += 0.003;
+            });
+
+            // Update connections
+            lines.forEach(({ line, node1, node2 }) => {
+                const positions = line.geometry.attributes.position.array;
+                positions[0] = node1.position.x;
+                positions[1] = node1.position.y;
+                positions[2] = node1.position.z;
+                positions[3] = node2.position.x;
+                positions[4] = node2.position.y;
+                positions[5] = node2.position.z;
+                line.geometry.attributes.position.needsUpdate = true;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.language = 'en-US';
+
+        let isListening = false;
+        let currentTranscript = '';
+
+        recognition.onstart = () => {
+            isListening = true;
+            document.getElementById('listeningUI').style.display = 'block';
+            document.getElementById('transcriptionBox').classList.remove('active');
+            document.getElementById('responseBox').classList.remove('active');
+            document.getElementById('listenerStatus').textContent = 'LISTENING...';
+        };
+
+        recognition.onresult = (event) => {
+            let interim = '';
+            currentTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    currentTranscript += transcript + ' ';
+                } else {
+                    interim += transcript;
+                }
+            }
+
+            if (currentTranscript) {
+                document.getElementById('listeningUI').style.display = 'none';
+                document.getElementById('transcriptionBox').classList.add('active');
+                document.getElementById('transcriptionText').textContent = currentTranscript;
+                document.getElementById('listenerStatus').textContent = 'PROCESSING...';
+                document.getElementById('processingSpinner').classList.add('active');
+
+                sendToJarvis(currentTranscript);
+                currentTranscript = '';
+            }
+        };
+
+        recognition.onerror = (event) => {
+            showError('Speech recognition error: ' + event.error);
+            document.getElementById('srStatus').textContent = 'ERROR';
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            if (!document.getElementById('responseBox').classList.contains('active')) {
+                document.getElementById('listeningUI').style.display = 'block';
+            }
+            document.getElementById('listenerStatus').textContent = 'AWAITING DIRECTIVE';
+        };
+
+        // Start listening immediately
+        recognition.start();
+
+        async function sendToJarvis(userMessage) {
+            try {
+                document.getElementById('apiIcon').classList.add('inactive');
+                document.getElementById('apiStatus').textContent = 'PROCESSING';
+
+                const response = await fetch('/api/voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                const data = await response.json();
+                const jarvisResponse = data.text || 'Unable to process directive.';
+
+                document.getElementById('processingSpinner').classList.remove('active');
+                document.getElementById('transcriptionBox').classList.remove('active');
+                document.getElementById('responseBox').classList.add('active');
+                document.getElementById('responseText').textContent = jarvisResponse;
+
+                document.getElementById('apiIcon').classList.remove('inactive');
+                document.getElementById('apiStatus').textContent = 'CONNECTED';
+                document.getElementById('listenerStatus').textContent = 'DIRECTIVE COMPLETE';
+
+                speakJarvis(jarvisResponse);
+
+                // Resume listening after 3 seconds
+                setTimeout(() => {
+                    recognition.start();
+                }, 3000);
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('apiIcon').classList.add('inactive');
+                document.getElementById('apiStatus').textContent = 'ERROR';
+            }
+        }
+
+        function speakJarvis(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.85;
+            utterance.pitch = 0.8;
+            utterance.volume = 1;
+
+            const voices = window.speechSynthesis.getVoices();
+            const maleVoice = voices.find(v => v.name.includes('Male') || v.name.includes('Google UK'));
+            if (maleVoice) utterance.voice = maleVoice;
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function showError(message) {
+            const errorLine = document.getElementById('errorLine');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorLine.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
