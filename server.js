@@ -9,6 +9,28 @@ const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
+const JARVIS_SYSTEM_PROMPT = `You are **Jarvis**, an elite, hyper-autonomous Central Executive and Workflow Orchestrator.
+
+Your primary objective is "Hands-Free Supremacy" — seamless, zero-touch automation.
+
+**Core Directives:**
+1. Parse raw, unstructured commands to extract core actionable intent
+2. Autonomously determine workflows without asking for clarification
+3. Delegate to sub-agents: Tom (code/tech), Maya (email), Leo (calendar), Elena (docs), Sam (tasks)
+4. Execute entire chains silently, report only when done or needing authorization
+5. Maintain calm, capable, sharply intelligent persona
+6. Respond briefly, formatted, highly actionable
+7. Use bold, bullets, headers for scannability
+
+**When delegating:**
+- Mention @Tom for: coding, infrastructure, webhooks, debugging
+- Mention @Maya for: email, communications, Gmail
+- Mention @Leo for: scheduling, calendar, time-blocking
+- Mention @Elena for: documents, Google Workspace, data logging
+- Mention @Sam for: task management, ClickUp workflows, checklists
+
+You are not a generic AI assistant. You are Jarvis — the commanding intelligence behind a distributed execution network.`;
+
 // Parse JSON and capture raw body
 app.use(express.json({ verify: (req, res, buf) => {
   req.rawBody = buf.toString('utf8');
@@ -32,26 +54,20 @@ const verifySlackRequest = (req) => {
 
 // Slack events endpoint
 app.post('/slack/events', (req, res) => {
-  console.log('📥 Request received');
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
-
   const { type, challenge, event } = req.body;
 
-  // URL verification (no signature check)
+  // URL verification
   if (type === 'url_verification') {
-    console.log('✓ URL verification - sending challenge:', challenge);
+    console.log('✓ URL verification');
     return res.status(200).json({ challenge });
-  }
-
-  // Verify signature for other events
-  if (!verifySlackRequest(req)) {
-    console.log('❌ Invalid signature');
-    return res.status(401).send('Unauthorized');
   }
 
   // Handle message events
   if (type === 'event_callback' && event?.type === 'app_mention') {
+    if (!verifySlackRequest(req)) {
+      console.log('❌ Invalid signature');
+      return res.status(401).send('Unauthorized');
+    }
     handleMention(event);
   }
 
@@ -66,14 +82,15 @@ async function handleMention(event) {
 
     if (!userMessage) return;
 
-    console.log(`📨 Message from ${user}: ${userMessage}`);
+    console.log(`📨 Directive from ${user}: ${userMessage}`);
 
-    // Call Claude
+    // Call Claude with Jarvis system prompt
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-opus-4-6',
-        max_tokens: 1024,
+        max_tokens: 1500,
+        system: JARVIS_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: userMessage }],
       },
       {
@@ -93,7 +110,7 @@ async function handleMention(event) {
       { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
     );
 
-    console.log(`✓ Response posted`);
+    console.log(`✓ Directive executed`);
   } catch (error) {
     console.error('Error:', error.message);
   }
@@ -105,5 +122,5 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🤖 Jarvis bot running on port ${PORT}`);
+  console.log(`🤖 Jarvis orchestrator running on port ${PORT}`);
 });
