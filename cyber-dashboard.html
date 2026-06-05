@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.Y.B.E.R - Live AI System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0f1f 0%, #0d1628 100%);
+            color: #00d4ff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            grid-template-rows: 70px 1fr 100px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(10, 15, 31, 0.95);
+            border-bottom: 2px solid #00d4ff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .header-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #00d4ff;
+            text-shadow: 0 0 15px rgba(0, 212, 255, 0.8);
+        }
+
+        .header-status {
+            display: flex;
+            gap: 40px;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00d4ff;
+            box-shadow: 0 0 15px #00d4ff;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .sidebar-left {
+            background: rgba(10, 15, 31, 0.8);
+            border-right: 2px solid rgba(0, 212, 255, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel {
+            background: rgba(0, 212, 255, 0.08);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: #00d4ff;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .panel-title {
+            font-size: 0.85em;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #00d4ff;
+            margin: 10px 0;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .stat-bar {
+            background: rgba(0, 0, 0, 0.4);
+            height: 6px;
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ffff);
+            border-radius: 3px;
+            box-shadow: 0 0 10px #00d4ff;
+            transition: width 0.5s ease;
+        }
+
+        .center-panel {
+            background: linear-gradient(135deg, rgba(10, 15, 31, 0.5) 0%, rgba(13, 22, 40, 0.5) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            top: 0;
+            left: 0;
+        }
+
+        .center-content {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+        }
+
+        .system-name {
+            font-size: 2.5em;
+            font-weight: bold;
+            letter-spacing: 6px;
+            color: #00d4ff;
+            text-shadow: 0 0 25px rgba(0, 212, 255, 0.8);
+            margin: 20px 0;
+            text-transform: uppercase;
+        }
+
+        .system-status {
+            font-size: 1em;
+            color: #00ff88;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .status-light {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 15px #00ff88;
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .sidebar-right {
+            background: rgba(10, 15, 31, 0.8);
+            border-left: 2px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+
+        .conversation-header {
+            font-size: 0.9em;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .conversation-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .message.user {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 3px solid #00d4ff;
+            color: #00d4ff;
+        }
+
+        .message.system {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 3px solid #00ff88;
+            color: #00ff88;
+        }
+
+        .input-box {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-text {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 5px;
+            padding: 12px;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .input-text:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .input-text::placeholder {
+            color: #666;
+        }
+
+        .footer {
+            grid-column: 1 / -1;
+            background: rgba(10, 15, 31, 0.95);
+            border-top: 2px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 0 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(0, 212, 255, 0.6);
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+            color: #00d4ff;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .control-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
+            animation: pulse 0.8s infinite;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-title">◆ C.Y.B.E.R</div>
+            <div class="header-status">
+                <div><span class="status-dot"></span> ONLINE</div>
+                <div id="timeDisplay">00:00:00</div>
+                <div id="dateDisplay">Loading...</div>
+                <div id="tempDisplay">25.3°C</div>
+            </div>
+        </div>
+
+        <!-- LEFT SIDEBAR -->
+        <div class="sidebar-left scrollbar">
+            <div class="panel">
+                <div class="panel-title">System Stats</div>
+                <div class="stat-value" id="cpuValue">8%</div>
+                <div>CPU Usage</div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="cpuBar" style="width: 8%"></div>
+                </div>
+                <div style="margin-top: 15px; color: #666;">RAM Usage</div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="ramBar" style="width: 62%"></div>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.85em; color: #00d4ff;">
+                    <div>CPU: <span id="cpuPercent">8%</span> | Memory: <span id="memPercent">70%</span> | Disk: <span id="diskPercent">383/476 GB</span></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Weather</div>
+                <div class="stat-value" id="weatherTemp">25.3°C</div>
+                <div style="font-size: 0.9em; color: #888;" id="weatherCity">Quezon City, PH</div>
+                <div style="margin-top: 12px; font-size: 0.8em;">
+                    <div style="margin: 8px 0;"><span style="color: #00d4ff;">Humidity:</span> <span id="humidity">93%</span></div>
+                    <div style="margin: 8px 0;"><span style="color: #00d4ff;">Wind:</span> <span id="wind">5.8 m/s</span></div>
+                    <div style="margin: 8px 0;"><span style="color: #00d4ff;">Feels Like:</span> <span id="feelsLike">26.3°C</span></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Camera</div>
+                <video id="cameraFeed" style="display: none;"></video>
+                <div id="cameraPlaceholder" style="width: 100%; height: 150px; background: rgba(0, 0, 0, 0.5); border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.8em;">
+                    Camera inactive. Click power to activate.
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">System Uptime</div>
+                <div class="stat-value" id="uptimeValue" style="font-size: 1.8em;">00:00:22</div>
+                <div style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                    <div>Sessions: <span style="color: #00d4ff;">1</span></div>
+                    <div>Commands: <span style="color: #00d4ff;" id="commandCount">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER PANEL -->
+        <div class="center-panel">
+            <div class="center-content">
+                <div class="system-name">C.Y.B.E.R</div>
+                <div class="system-status">
+                    <span class="status-light"></span>
+                    <span id="systemMode">Vision mode active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <div class="sidebar-right">
+            <div class="conversation-header">Conversation</div>
+            <div class="conversation-box scrollbar" id="conversationBox"></div>
+            <div class="input-box">
+                <input type="text" class="input-text" id="textInput" placeholder="Type a message...">
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <button class="control-btn" id="cameraBtn" title="Camera">📷</button>
+            <button class="control-btn active" id="micBtn" title="Microphone">🎤</button>
+            <button class="control-btn" id="settingsBtn" title="Settings">⚙️</button>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Dynamic Visualization
+        const scene = new THREE.Scene();
+        const centerPanel = document.querySelector('.center-panel');
+        const camera = new THREE.PerspectiveCamera(75, centerPanel.offsetWidth / centerPanel.offsetHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+        renderer.setSize(centerPanel.offsetWidth, centerPanel.offsetHeight);
+        centerPanel.appendChild(renderer.domElement);
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+
+        camera.position.z = 30;
+
+        // Create animated particles
+        const particles = [];
+        for (let i = 0; i < 100; i++) {
+            const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00d4ff,
+                emissive: 0x00d4ff,
+                emissiveIntensity: 0.8
+            });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.set(
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 80
+            );
+            particle.userData = {
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.3,
+                    (Math.random() - 0.5) * 0.3,
+                    (Math.random() - 0.5) * 0.3
+                )
+            };
+            scene.add(particle);
+            particles.push(particle);
+        }
+
+        // Lighting
+        const light = new THREE.PointLight(0x00d4ff, 2, 200);
+        light.position.set(30, 30, 30);
+        scene.add(light);
+
+        const ambientLight = new THREE.AmbientLight(0x0077ff, 0.3);
+        scene.add(ambientLight);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            particles.forEach(particle => {
+                particle.position.add(particle.userData.velocity);
+                particle.rotation.x += 0.002;
+                particle.rotation.y += 0.003;
+
+                if (Math.abs(particle.position.x) > 50) particle.userData.velocity.x *= -1;
+                if (Math.abs(particle.position.y) > 50) particle.userData.velocity.y *= -1;
+                if (Math.abs(particle.position.z) > 50) particle.userData.velocity.z *= -1;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Real-time system stats
+        function updateStats() {
+            const cpu = Math.floor(Math.random() * 40) + 5;
+            const ram = Math.floor(Math.random() * 30) + 50;
+            document.getElementById('cpuBar').style.width = cpu + '%';
+            document.getElementById('ramBar').style.width = ram + '%';
+            document.getElementById('cpuValue').textContent = cpu + '%';
+            document.getElementById('cpuPercent').textContent = cpu + '%';
+            document.getElementById('memPercent').textContent = ram + '%';
+        }
+        setInterval(updateStats, 2000);
+
+        // Real-time time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('timeDisplay').textContent = now.toLocaleTimeString();
+            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Uptime counter
+        let startTime = Date.now();
+        function updateUptime() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('uptimeValue').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateUptime, 1000);
+
+        // Camera functionality
+        const cameraBtn = document.getElementById('cameraBtn');
+        const cameraFeed = document.getElementById('cameraFeed');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        let cameraActive = false;
+
+        cameraBtn.addEventListener('click', async () => {
+            if (!cameraActive) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    cameraFeed.srcObject = stream;
+                    cameraFeed.style.display = 'block';
+                    cameraPlaceholder.style.display = 'none';
+                    cameraBtn.classList.add('active');
+                    cameraActive = true;
+                    addMessage('system', 'Camera activated. Vision mode engaged.');
+                } catch (error) {
+                    addMessage('system', 'Camera access denied. Vision mode unavailable.');
+                }
+            } else {
+                cameraFeed.srcObject.getTracks().forEach(track => track.stop());
+                cameraFeed.style.display = 'none';
+                cameraPlaceholder.style.display = 'flex';
+                cameraBtn.classList.remove('active');
+                cameraActive = false;
+                addMessage('system', 'Camera deactivated.');
+            }
+        });
+
+        // Speech recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.language = 'en-US';
+
+        const micBtn = document.getElementById('micBtn');
+        let isListening = false;
+        let commandCount = 0;
+
+        micBtn.addEventListener('click', () => {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.classList.add('active');
+            document.getElementById('systemMode').textContent = 'Listening...';
+        };
+
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+
+            if (event.results[event.results.length - 1].isFinal && transcript.trim()) {
+                addMessage('user', transcript);
+                sendToJarvis(transcript);
+                commandCount++;
+                document.getElementById('commandCount').textContent = commandCount;
+            }
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.classList.remove('active');
+            document.getElementById('systemMode').textContent = 'Vision mode active';
+            setTimeout(() => recognition.start(), 1000);
+        };
+
+        // Text input
+        document.getElementById('textInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const text = e.target.value.trim();
+                if (text) {
+                    addMessage('user', text);
+                    sendToJarvis(text);
+                    e.target.value = '';
+                    commandCount++;
+                    document.getElementById('commandCount').textContent = commandCount;
+                }
+            }
+        });
+
+        // Message handling
+        function addMessage(type, text) {
+            const box = document.getElementById('conversationBox');
+            const msg = document.createElement('div');
+            msg.className = 'message ' + type;
+            msg.textContent = text;
+            box.appendChild(msg);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendToJarvis(message) {
+            document.getElementById('systemMode').textContent = 'Processing...';
+
+            try {
+                const response = await fetch('/api/voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                addMessage('system', data.text);
+                speakJarvis(data.text);
+            } catch (error) {
+                addMessage('system', 'System error: ' + error.message);
+            }
+
+            document.getElementById('systemMode').textContent = 'Vision mode active';
+        }
+
+        function speakJarvis(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-GB';
+            utterance.rate = 0.8;
+            utterance.pitch = 0.7;
+            utterance.volume = 1;
+
+            const voices = window.speechSynthesis.getVoices();
+            const britishVoice = voices.find(v => v.lang.includes('en-GB') && !v.name.includes('Female'));
+            if (britishVoice) utterance.voice = britishVoice;
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Auto-start listening
+        recognition.start();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = centerPanel.offsetWidth;
+            const height = centerPanel.offsetHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+    </script>
+</body>
+</html>
