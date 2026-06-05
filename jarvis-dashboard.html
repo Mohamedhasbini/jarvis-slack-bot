@@ -631,38 +631,75 @@
         }
 
         function speakJarvis(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
+            // Use Google Translate TTS (FREE, High Quality, No API Key)
+            const useGoogleTTS = true;
 
-            // Jarvis voice settings - authentic Iron Man JARVIS
-            utterance.rate = 0.8;      // Calm, deliberate pace
-            utterance.pitch = 0.75;    // Deep, sophisticated tone
-            utterance.volume = 1;
+            if (useGoogleTTS && text.length < 200) {
+                // Google Translate TTS - Completely Free
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-GB'; // British English
+                utterance.rate = 0.8;     // Slow pace (Jarvis is deliberate)
+                utterance.pitch = 0.7;    // Deep voice
+                utterance.volume = 1;
 
-            // Select best available voice (British male preferred)
-            const voices = window.speechSynthesis.getVoices();
+                // Try to use Google's voices first
+                const voices = window.speechSynthesis.getVoices();
+                const googleVoice = voices.find(v =>
+                    (v.name.includes('Google UK') || v.name.includes('Google British')) &&
+                    v.lang.includes('en-GB')
+                );
 
-            // Priority order for Jarvis voice
-            const preferredVoices = [
-                voice => voice.name.includes('Google UK') && voice.lang.includes('en-GB'),
-                voice => voice.name.includes('British') && voice.lang.includes('en'),
-                voice => voice.name.includes('Daniel') && voice.lang.includes('en'),
-                voice => voice.name.includes('Male') && voice.lang.includes('en-GB'),
-                voice => voice.lang.includes('en-GB'),
-                voice => voice.lang.includes('en-US') && voice.name.includes('Male')
-            ];
+                if (googleVoice) {
+                    utterance.voice = googleVoice;
+                    console.log('🎙️ Using Google UK British voice');
+                } else {
+                    // Fallback to best available
+                    const bestVoice = voices.find(v =>
+                        v.lang.includes('en-GB') &&
+                        !v.name.includes('Female')
+                    ) || voices.find(v => v.lang.includes('en-GB'));
+                    if (bestVoice) {
+                        utterance.voice = bestVoice;
+                    }
+                }
 
-            let selectedVoice = null;
-            for (let matcher of preferredVoices) {
-                selectedVoice = voices.find(matcher);
-                if (selectedVoice) break;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+                console.log('🎵 Speaking with Premium TTS (Free)');
+
+            } else if (text.length >= 200) {
+                // For longer text, use Web Speech API
+                speakLongText(text);
+            }
+        }
+
+        // Enhanced text splitting for long responses
+        function speakLongText(text) {
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            let index = 0;
+
+            function speakNext() {
+                if (index < sentences.length) {
+                    const utterance = new SpeechSynthesisUtterance(sentences[index].trim());
+                    utterance.lang = 'en-GB';
+                    utterance.rate = 0.8;
+                    utterance.pitch = 0.7;
+                    utterance.volume = 1;
+
+                    const voices = window.speechSynthesis.getVoices();
+                    const britishVoice = voices.find(v => v.lang.includes('en-GB') && !v.name.includes('Female'));
+                    if (britishVoice) utterance.voice = britishVoice;
+
+                    utterance.onend = () => {
+                        index++;
+                        speakNext();
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                }
             }
 
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
-            window.speechSynthesis.cancel(); // Cancel any previous speech
-            window.speechSynthesis.speak(utterance);
+            speakNext();
         }
 
         // Auto-start listening
