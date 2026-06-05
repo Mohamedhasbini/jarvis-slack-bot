@@ -223,10 +223,10 @@
             }
 
             if (finalTranscript) {
-                transcriptText.textContent = finalTranscript;
-                transcript.style.display = 'block';
+                if (transcriptText) transcriptText.textContent = finalTranscript;
+                if (transcript) transcript.style.display = 'block';
                 status.textContent = 'Processing...';
-                loading.style.display = 'block';
+                if (loading) loading.style.display = 'block';
                 sendToJarvis(finalTranscript);
             }
         };
@@ -257,9 +257,9 @@
                 const data = await response.json();
                 const jarvisResponse = data.text || 'Unable to process request.';
 
-                responseText.innerHTML = jarvisResponse.replace(/\n/g, '<br>');
-                response.style.display = 'block';
-                loading.style.display = 'none';
+                if (responseText) responseText.innerHTML = jarvisResponse.replace(/\n/g, '<br>');
+                if (response) response.style.display = 'block';
+                if (loading) loading.style.display = 'none';
                 status.textContent = '✓ Complete';
 
                 // Speak response
