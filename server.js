@@ -4,24 +4,42 @@ const { createHmac } = require('crypto');
 const axios = require('axios');
 
 const app = express();
-app.use(express.json());
 
 const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+
+// Middleware to capture raw body BEFORE JSON parsing
+app.use((req, res, next) => {
+  let rawBody = '';
+  req.setEncoding('utf8');
+
+  req.on('data', chunk => {
+    rawBody += chunk;
+  });
+
+  req.on('end', () => {
+    req.rawBody = rawBody;
+    req.body = JSON.parse(rawBody || '{}');
+    next();
+  });
+});
 
 // Verify Slack request signature
 const verifySlackRequest = (req) => {
   const timestamp = req.headers['x-slack-request-timestamp'];
   const signature = req.headers['x-slack-signature'];
 
+  if (!timestamp || !signature) {
+    return false;
+  }
+
   // Check timestamp is within 5 minutes
   if (Math.abs(Date.now() / 1000 - timestamp) > 300) {
     return false;
   }
 
-  const body = req.rawBody || '';
-  const baseString = `v0:${timestamp}:${body}`;
+  const baseString = `v0:${timestamp}:${req.rawBody}`;
   const hash = createHmac('sha256', SLACK_SIGNING_SECRET)
     .update(baseString)
     .digest('hex');
@@ -29,18 +47,6 @@ const verifySlackRequest = (req) => {
 
   return signature === computedSignature;
 };
-
-// Middleware to capture raw body for signature verification
-app.use((req, res, next) => {
-  let rawBody = '';
-  req.on('data', chunk => {
-    rawBody += chunk.toString();
-  });
-  req.on('end', () => {
-    req.rawBody = rawBody;
-    next();
-  });
-});
 
 // Slack events endpoint
 app.post('/slack/events', express.json(), async (req, res) => {
