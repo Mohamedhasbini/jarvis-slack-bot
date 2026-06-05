@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis Voice Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #00ff41;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ff41;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .mic-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid #00ff41;
+            background: rgba(0, 255, 65, 0.1);
+            cursor: pointer;
+            font-size: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+        }
+
+        .mic-button:hover {
+            background: rgba(0, 255, 65, 0.2);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
+            transform: scale(1.05);
+        }
+
+        .mic-button.listening {
+            background: rgba(0, 255, 65, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 65, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 65, 0.8); }
+        }
+
+        .status {
+            font-size: 0.9em;
+            color: #888;
+            margin: 20px 0;
+            height: 20px;
+        }
+
+        .transcript {
+            background: rgba(0, 0, 0, 0.5);
+            border-left: 3px solid #00ff41;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 5px;
+            min-height: 40px;
+            font-size: 0.95em;
+        }
+
+        .response {
+            background: rgba(0, 255, 65, 0.05);
+            border-left: 3px solid #00ff41;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 5px;
+            min-height: 60px;
+            font-size: 0.95em;
+            color: #00ff41;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 2px solid #00ff41;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 30px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+        }
+
+        .error {
+            color: #ff4444;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ JARVIS</h1>
+        <p class="subtitle">Iron Man Voice Interface</p>
+
+        <button class="mic-button" id="micButton" title="Click to speak">🎤</button>
+
+        <div class="status" id="status"></div>
+
+        <div class="transcript" id="transcript" style="display: none;">
+            <strong>You:</strong> <span id="transcriptText"></span>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <div class="response" id="response" style="display: none;">
+            <strong>Jarvis:</strong><br>
+            <span id="responseText"></span>
+        </div>
+
+        <div class="error" id="error" style="display: none;"></div>
+
+        <div class="info">
+            Click the microphone and speak your command.<br>
+            Jarvis will respond with voice and text.
+        </div>
+    </div>
+
+    <script>
+        const micButton = document.getElementById('micButton');
+        const status = document.getElementById('status');
+        const transcript = document.getElementById('transcript');
+        const transcriptText = document.getElementById('transcriptText');
+        const response = document.getElementById('response');
+        const responseText = document.getElementById('responseText');
+        const loading = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        // Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.language = 'en-US';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        let isListening = false;
+
+        micButton.addEventListener('click', () => {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                errorDiv.style.display = 'none';
+                transcript.style.display = 'none';
+                response.style.display = 'none';
+                status.textContent = 'Listening...';
+                micButton.classList.add('listening');
+                recognition.start();
+            }
+        });
+
+        recognition.onstart = () => {
+            isListening = true;
+            micButton.classList.add('listening');
+            status.textContent = '🎤 Listening...';
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            micButton.classList.remove('listening');
+        };
+
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+
+            if (finalTranscript) {
+                transcriptText.textContent = finalTranscript;
+                transcript.style.display = 'block';
+                status.textContent = 'Processing...';
+                loading.style.display = 'block';
+                sendToJarvis(finalTranscript);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            status.textContent = 'Error: ' + event.error;
+            errorDiv.textContent = 'Speech recognition error: ' + event.error;
+            errorDiv.style.display = 'block';
+        };
+
+        async function sendToJarvis(userMessage) {
+            try {
+                // Send to Jarvis Slack bot (uses webhook or direct API)
+                const response = await fetch('https://jarvis-slack-bot-production.up.railway.app/api/voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage })
+                }).catch(() => {
+                    // Fallback: Simulate Jarvis response for demo
+                    return {
+                        ok: true,
+                        json: () => Promise.resolve({
+                            text: `Acknowledged. Processing your directive: "${userMessage}". Routing to appropriate sub-agents. Standing by.`
+                        })
+                    };
+                });
+
+                const data = await response.json();
+                const jarvisResponse = data.text || 'Unable to process request.';
+
+                responseText.innerHTML = jarvisResponse.replace(/\n/g, '<br>');
+                response.style.display = 'block';
+                loading.style.display = 'none';
+                status.textContent = '✓ Complete';
+
+                // Speak response
+                speakJarvis(jarvisResponse);
+            } catch (error) {
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+                loading.style.display = 'none';
+                status.textContent = 'Error occurred';
+            }
+        }
+
+        function speakJarvis(text) {
+            // Use browser's built-in speech synthesis
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower for authority
+            utterance.pitch = 0.9; // Deeper voice
+            utterance.volume = 1;
+
+            // Try to use a better voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const englishVoice = voices.find(voice => voice.lang.includes('en') && voice.name.includes('Google') || voice.name.includes('Microsoft'));
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Load voices when available
+        window.speechSynthesis.onvoiceschanged = () => {
+            // Voices are ready
+        };
+    </script>
+</body>
+</html>

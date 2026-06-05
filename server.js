@@ -1,9 +1,13 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const { createHmac } = require('crypto');
 const axios = require('axios');
 
 const app = express();
+
+// Serve voice interface
+app.use(express.static(path.join(__dirname)));
 
 const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
@@ -119,6 +123,44 @@ async function handleMention(event) {
     console.error('Error:', error.message);
   }
 }
+
+// Voice API endpoint
+app.post('/api/voice', express.json(), async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ text: 'No message provided.' });
+    }
+
+    console.log(`🎤 Voice directive: ${message}`);
+
+    // Call Claude with Jarvis system prompt
+    const response = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      {
+        model: 'claude-opus-4-6',
+        max_tokens: 1500,
+        system: JARVIS_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: message }],
+      },
+      {
+        headers: {
+          'x-api-key': CLAUDE_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+      }
+    );
+
+    const reply = response.data.content[0].text;
+    console.log(`✓ Voice response generated`);
+
+    res.json({ text: reply });
+  } catch (error) {
+    console.error('Voice API error:', error.message);
+    res.status(500).json({ text: 'Error processing your directive.' });
+  }
+});
 
 // Health check
 app.get('/health', (req, res) => res.json({ ok: true }));
