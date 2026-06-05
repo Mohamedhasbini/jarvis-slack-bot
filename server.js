@@ -159,29 +159,173 @@ const taskLog = {
   lastCommand: null
 };
 
-// Web search function (DuckDuckGo - free, no API key needed)
+// ============ REAL-TIME DATA SOURCES ============
+
+// Web Search (DuckDuckGo - Free)
 async function webSearch(query) {
   try {
     const response = await axios.get(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1`);
     const data = response.data;
-
     let results = '';
-
-    if (data.AbstractText) {
-      results += data.AbstractText + ' ';
-    }
-
+    if (data.AbstractText) results += data.AbstractText + ' ';
     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
       data.RelatedTopics.slice(0, 3).forEach(topic => {
         if (topic.Text) results += topic.Text + ' ';
       });
     }
-
     return results.trim() || null;
   } catch (error) {
     console.error('Search error:', error.message);
     return null;
   }
+}
+
+// Real-time Weather Data (Open-Meteo - Free, no API key)
+async function getWeather(query = 'London') {
+  try {
+    // Parse location from query or use default
+    const location = query.match(/(?:weather|forecast).*?(?:in|for|at)?\s+([A-Za-z\s]+)/i)?.[1] || 'London';
+
+    // Get coordinates (simplified - would need geocoding API for full implementation)
+    const response = await axios.get(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`);
+
+    if (!response.data.results || response.data.results.length === 0) {
+      return null;
+    }
+
+    const { latitude, longitude, name } = response.data.results[0];
+    const weatherResponse = await axios.get(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,wind_speed_10m,humidity`
+    );
+
+    const weather = weatherResponse.data.current;
+    return `Current weather in ${name}: ${weather.temperature_2m}°C, ${getWeatherDescription(weather.weather_code)}, Wind: ${weather.wind_speed_10m} km/h, Humidity: ${weather.humidity}%`;
+  } catch (error) {
+    console.error('Weather error:', error.message);
+    return null;
+  }
+}
+
+function getWeatherDescription(code) {
+  const descriptions = {
+    0: 'Clear sky',
+    1: 'Mainly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Foggy',
+    48: 'Foggy',
+    51: 'Light drizzle',
+    53: 'Moderate drizzle',
+    55: 'Heavy drizzle',
+    61: 'Slight rain',
+    63: 'Moderate rain',
+    65: 'Heavy rain',
+    71: 'Slight snow',
+    73: 'Moderate snow',
+    75: 'Heavy snow',
+    80: 'Slight rain showers',
+    81: 'Moderate rain showers',
+    82: 'Violent rain showers',
+    85: 'Slight snow showers',
+    86: 'Heavy snow showers'
+  };
+  return descriptions[code] || 'Unknown conditions';
+}
+
+// Cryptocurrency Prices (CoinGecko - Free)
+async function getCryptoPrice(crypto = 'bitcoin') {
+  try {
+    const response = await axios.get(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${crypto.toLowerCase()}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true`
+    );
+    const data = response.data[crypto.toLowerCase()];
+    if (data) {
+      return `${crypto} is currently $${data.usd.toLocaleString()}, Market Cap: $${(data.usd_market_cap / 1e9).toFixed(2)}B, 24h Volume: $${(data.usd_24h_vol / 1e9).toFixed(2)}B`;
+    }
+  } catch (error) {
+    console.error('Crypto error:', error.message);
+  }
+  return null;
+}
+
+// Current Time and Date
+function getCurrentTime() {
+  const now = new Date();
+  return `Current time: ${now.toLocaleTimeString('en-GB')}, Date: ${now.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+}
+
+// News Headlines (Using web search for news)
+async function getNews(query = 'latest news') {
+  return await webSearch(query + ' site:bbc.com OR site:reuters.com OR site:apnews.com');
+}
+
+// Stock Information (Using web search)
+async function getStockInfo(symbol) {
+  return await webSearch(`${symbol} stock price quote`);
+}
+
+// Comprehensive Live Data Fetcher
+async function getLiveData(message) {
+  let liveContext = '';
+
+  // Detect and fetch real-time data
+
+  // WEATHER
+  if (/weather|temperature|forecast|cloudy|rain|snow|climate|celsius|fahrenheit/i.test(message)) {
+    console.log('📍 Fetching weather data...');
+    const location = message.match(/(?:weather|forecast).*?(?:in|for|at)?\s+([A-Za-z\s,]+)/i)?.[1];
+    const weather = await getWeather(location ? location : message);
+    if (weather) liveContext += `\n[LIVE WEATHER]: ${weather}`;
+  }
+
+  // TIME & DATE
+  if (/what time|what's the time|current time|date today|what day/i.test(message)) {
+    console.log('⏰ Fetching current time...');
+    liveContext += `\n[CURRENT TIME]: ${getCurrentTime()}`;
+  }
+
+  // CRYPTOCURRENCY
+  if (/bitcoin|ethereum|crypto|btc|eth|cryptocurrency|crypto price/i.test(message)) {
+    console.log('💰 Fetching crypto prices...');
+    let cryptos = message.match(/bitcoin|ethereum|litecoin|ripple|cardano|solana|polkadot/gi) || ['bitcoin'];
+    for (let crypto of cryptos.slice(0, 3)) {
+      const price = await getCryptoPrice(crypto);
+      if (price) liveContext += `\n[${crypto.toUpperCase()} PRICE]: ${price}`;
+    }
+  }
+
+  // NEWS & BREAKING NEWS
+  if (/news|breaking|headline|current event|what's happening|latest|trending/i.test(message)) {
+    console.log('📰 Fetching news...');
+    const news = await getNews(message);
+    if (news) liveContext += `\n[LIVE NEWS]: ${news}`;
+  }
+
+  // STOCKS
+  if (/stock|share|market|NYSE|nasdaq|dow jones|s&p 500|tesla|apple|google/i.test(message)) {
+    console.log('📊 Fetching stock data...');
+    const stocks = message.match(/[A-Z]{1,5}(?=\s|$)/g) || [];
+    for (let stock of stocks.slice(0, 2)) {
+      const info = await getStockInfo(stock);
+      if (info) liveContext += `\n[${stock} STOCK]: ${info}`;
+    }
+  }
+
+  // SPORTS SCORES (via web search)
+  if (/score|game|match|sports|football|basketball|baseball|soccer|cricket/i.test(message)) {
+    console.log('⚽ Fetching sports data...');
+    const sports = await webSearch(`live score ${message.match(/football|basketball|baseball|soccer|cricket/i)?.[0] || ''}`);
+    if (sports) liveContext += `\n[LIVE SPORTS]: ${sports}`;
+  }
+
+  // GENERAL WEB SEARCH
+  if (!liveContext && /what is|tell me|how|why|who|where|when|search|find|look up/i.test(message)) {
+    console.log('🔍 Performing general web search...');
+    const search = await webSearch(message);
+    if (search) liveContext += `\n[WEB SEARCH RESULTS]: ${search}`;
+  }
+
+  return liveContext;
 }
 
 // Parse JSON and capture raw body
@@ -227,7 +371,7 @@ app.post('/slack/events', (req, res) => {
   res.json({ ok: true });
 });
 
-// Handle @jarvis mentions
+// Handle @jarvis mentions with LIVE DATA integration
 async function handleMention(event) {
   try {
     const { channel, ts, text, user } = event;
@@ -239,15 +383,24 @@ async function handleMention(event) {
     taskLog.lastCommand = userMessage;
 
     console.log(`⚡ Directive: ${userMessage}`);
+    console.log('🌐 Acquiring live data...');
 
-    // Call Claude with Jarvis system prompt
+    // Fetch ALL relevant live data
+    const liveData = await getLiveData(userMessage);
+
+    // Build enhanced message with live context
+    const enhancedMessage = userMessage + liveData;
+
+    console.log(`📡 Live data integrated. Processing...`);
+
+    // Call Claude with Jarvis system prompt and LIVE data
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-opus-4-6',
-        max_tokens: 300,
+        max_tokens: 400,
         system: JARVIS_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userMessage }],
+        messages: [{ role: 'user', content: enhancedMessage }],
       },
       {
         headers: {
@@ -265,19 +418,19 @@ async function handleMention(event) {
       'https://slack.com/api/chat.postMessage',
       {
         channel,
-        text: reply + '\n\n_— JARVIS_',
+        text: reply + '\n\n_— JARVIS (Live Data Integrated)_',
         thread_ts: ts
       },
       { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
     );
 
-    console.log(`✓ Complete. Response: ${reply.substring(0, 60)}...`);
+    console.log(`✓ Complete. Live data processed. Response: ${reply.substring(0, 60)}...`);
   } catch (error) {
     console.error('System error:', error.message);
   }
 }
 
-// Voice API endpoint with web search capability
+// Voice API endpoint with FULL LIVE DATA integration
 app.post('/api/voice', express.json(), async (req, res) => {
   try {
     const { message } = req.body;
@@ -290,30 +443,22 @@ app.post('/api/voice', express.json(), async (req, res) => {
     taskLog.lastCommand = message;
 
     console.log(`🎤 Voice directive: ${message}`);
+    console.log('⚡ Engaging live data systems...');
 
-    // Detect if query needs web search (weather, news, current info, real-time data)
-    const needsWebSearch = /weather|today|current|news|latest|now|real.?time|temperature|forecast|stock|price|today's/i.test(message);
+    // Fetch ALL relevant live data in parallel
+    const liveData = await getLiveData(message);
 
-    let contextData = '';
+    // Build enhanced message with live context
+    const enhancedMessage = message + liveData;
 
-    // Perform web search if needed
-    if (needsWebSearch) {
-      console.log(`🔍 Performing web search: ${message}`);
-      const searchResult = await webSearch(message);
-      if (searchResult) {
-        contextData = `\n\nCurrent web search results for context: ${searchResult}`;
-      }
-    }
+    console.log(`📡 Live context acquired. Processing with Claude...`);
 
-    // Build enhanced message with web context
-    const enhancedMessage = message + contextData;
-
-    // Call Claude with Jarvis system prompt and web data
+    // Call Claude with Jarvis system prompt and LIVE data
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-opus-4-6',
-        max_tokens: 300,
+        max_tokens: 400,
         system: JARVIS_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: enhancedMessage }],
       },
@@ -328,7 +473,7 @@ app.post('/api/voice', express.json(), async (req, res) => {
     const reply = response.data.content[0].text;
     taskLog.completed++;
 
-    console.log(`✓ Task complete. Response: ${reply.substring(0, 80)}...`);
+    console.log(`✓ Task complete. Live data integrated. Response: ${reply.substring(0, 80)}...`);
 
     res.json({ text: reply });
   } catch (error) {
