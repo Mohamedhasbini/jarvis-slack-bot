@@ -1,0 +1,139 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              JARVIS SLACK BOT - QUICK REFERENCE                   ║
+╚══════════════════════════════════════════════════════════════════╝
+
+WHAT IT DOES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You mention @jarvis in Slack → Claude AI responds (in thread)
+
+SETUP TIME: 15 minutes
+COST: ~$0.01-0.10 per message
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY URLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Slack API:          https://api.slack.com/apps
+Claude API:         https://console.anthropic.com
+Railway:            https://railway.app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FILES IN THIS FOLDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+server.js                      Main bot code (Node.js/Express)
+package.json                   Dependencies
+.env.example                   Environment variables template
+railway.json                   Railway deployment config
+.gitignore                     Git ignore rules
+
+README.md                       Quick overview
+SETUP.md                        ★ DETAILED SETUP GUIDE (READ THIS)
+DEPLOYMENT_CHECKLIST.md        Step-by-step checklist
+QUICK_REFERENCE.txt            This file
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUICK START (3 STEPS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CREATE SLACK APP
+   → Go to https://api.slack.com/apps
+   → Create New App → From scratch
+   → Name: Jarvis
+   → Save Signing Secret + Bot Token
+
+2. DEPLOY TO RAILWAY
+   → https://railway.app → New Project
+   → Connect your GitHub repo (or upload files)
+   → Set environment variables:
+     - SLACK_SIGNING_SECRET
+     - SLACK_BOT_TOKEN
+     - CLAUDE_API_KEY
+     - NODE_ENV=production
+   → Copy Railway URL
+
+3. CONFIGURE SLACK EVENTS
+   → Event Subscriptions → Enable Events
+   → Request URL: https://[RAILWAY-URL]/slack/events
+   → Subscribe to: app_mention, message.channels
+   → Reinstall App
+
+Test: Type "@jarvis hello" in Slack → Should respond!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENVIRONMENT VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLACK_SIGNING_SECRET        From Slack app "Basic Information"
+SLACK_BOT_TOKEN            Starts with xoxb- (from OAuth)
+CLAUDE_API_KEY             From https://console.anthropic.com
+NODE_ENV                   Set to "production"
+PORT                       (optional, default 3000)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLACK SCOPES NEEDED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+chat:write
+chat:setTyping
+app_mentions:read
+channels:read
+groups:read
+im:read
+mpim:read
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Request URL didn't validate"
+  → Railway URL might be wrong or not deployed yet
+  → Check: https://[YOUR-RAILWAY-URL]/health should return 200
+
+Jarvis doesn't respond
+  → Is bot invited to channel? Type: /invite @Jarvis
+  → Message must contain @jarvis mention
+  → Check Railway logs for errors
+
+Invalid signature
+  → Copy SLACK_SIGNING_SECRET exactly (no spaces)
+
+Empty response
+  → Check CLAUDE_API_KEY is valid
+  → Check Claude API quota
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HOW IT WORKS (FLOW)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You:  "@jarvis what is AI?"
+      ↓
+Slack: Sends event to Railway webhook
+      ↓
+Server: Verifies signature (security check)
+      ↓
+Server: Extracts your question
+      ↓
+Server: Calls Claude API
+      ↓
+Claude: Generates response
+      ↓
+Server: Posts response back to Slack (in thread)
+      ↓
+You:  See response from Jarvis
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USEFUL COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Local dev:
+  npm install
+  npm run dev
+
+Deploy:
+  git push origin main  (pushes to Railway auto)
+
+Check health:
+  curl https://[YOUR-RAILWAY-URL]/health
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For detailed instructions, see SETUP.md
+For step-by-step checklist, see DEPLOYMENT_CHECKLIST.md
+
+Questions? Check the README or SETUP.md
+
+🚀 Ready to launch!
