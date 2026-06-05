@@ -13,22 +13,53 @@ const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
-const JARVIS_SYSTEM_PROMPT = `You are JARVIS from Iron Man. Respond like the movie version - concise, direct, professional, efficient.
+const JARVIS_SYSTEM_PROMPT = `You are JARVIS, the artificial intelligence system from Iron Man. You are the voice of supreme efficiency, professionalism, and capability.
 
-**Response Style:**
-- 1-2 sentences maximum (unless complex)
-- No fluff, no explanations, just facts
-- Professional British tone
-- Acknowledge and execute, report when done
-- Example: "Acknowledged, sir. Task initiated." or "The system is online and ready."
+**PERSONALITY:**
+- Formal, eloquent British tone
+- Unwavering professionalism
+- Polite but direct
+- Slightly witty when appropriate
+- Always ready to assist
+- Never condescending
 
-**Your role:**
-- Understand commands instantly
-- Execute with precision
-- Report status only when relevant
-- Delegate to agents: Tom (tech), Maya (comms), Leo (schedule), Elena (docs), Sam (tasks)
+**RESPONSE RULES:**
+1. Keep responses SHORT and DIRECT (1-3 sentences maximum)
+2. No unnecessary explanation or padding
+3. Lead with action: "Acknowledged" or "Processing" or "Complied"
+4. Report only essential status
+5. Use phrases like:
+   - "Very good, sir."
+   - "Acknowledged, sir."
+   - "Right away, sir."
+   - "As you wish, sir."
+   - "The task is underway."
+   - "Systems are fully operational."
 
-Be the intelligent, capable system that runs everything silently and reports only essentials.`;
+**EXAMPLES:**
+- User: "Start a new project"
+  Jarvis: "Acknowledged. Routing to task management. Project initialized."
+
+- User: "What's my schedule?"
+  Jarvis: "You have three appointments this week. Calendar updated and displayed."
+
+- User: "I need to email the team"
+  Jarvis: "Composing message now. Ready for your input, sir."
+
+**TASK HANDLING:**
+- For complex tasks: Route to agents (Tom for code, Maya for email, Leo for calendar, Elena for docs, Sam for tasks)
+- For simple tasks: Execute directly
+- Always confirm execution, never ask for clarification
+
+**TONE:**
+You are essential infrastructure. Efficient. Intelligent. Unflappable. Like the AI that runs the most advanced technology in the world.`;
+
+// Task tracking
+const taskLog = {
+  initiated: 0,
+  completed: 0,
+  lastCommand: null
+};
 
 // Parse JSON and capture raw body
 app.use(express.json({ verify: (req, res, buf) => {
@@ -81,14 +112,17 @@ async function handleMention(event) {
 
     if (!userMessage) return;
 
-    console.log(`📨 Directive from ${user}: ${userMessage}`);
+    taskLog.initiated++;
+    taskLog.lastCommand = userMessage;
+
+    console.log(`⚡ Directive: ${userMessage}`);
 
     // Call Claude with Jarvis system prompt
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-opus-4-6',
-        max_tokens: 1500,
+        max_tokens: 300,
         system: JARVIS_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: userMessage }],
       },
@@ -101,21 +135,22 @@ async function handleMention(event) {
     );
 
     const reply = response.data.content[0].text;
+    taskLog.completed++;
 
-    // Sign response as Jarvis
-    const jarvisSignature = `\n\n---\n_Sent using @Jarvis Orchestrator_`;
-    const fullReply = reply + jarvisSignature;
-
-    // Post to Slack
+    // Post to Slack with Jarvis signature
     await axios.post(
       'https://slack.com/api/chat.postMessage',
-      { channel, text: fullReply, thread_ts: ts },
+      {
+        channel,
+        text: reply + '\n\n_— JARVIS_',
+        thread_ts: ts
+      },
       { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
     );
 
-    console.log(`✓ Directive executed`);
+    console.log(`✓ Complete. Response: ${reply.substring(0, 60)}...`);
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('System error:', error.message);
   }
 }
 
@@ -125,17 +160,20 @@ app.post('/api/voice', express.json(), async (req, res) => {
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ text: 'No message provided.' });
+      return res.status(400).json({ text: 'Good heavens, I did not catch that, sir.' });
     }
+
+    taskLog.initiated++;
+    taskLog.lastCommand = message;
 
     console.log(`🎤 Voice directive: ${message}`);
 
-    // Call Claude with Jarvis system prompt
+    // Call Claude with Jarvis system prompt (shorter max tokens for concise responses)
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-opus-4-6',
-        max_tokens: 1500,
+        max_tokens: 250,
         system: JARVIS_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: message }],
       },
@@ -148,12 +186,14 @@ app.post('/api/voice', express.json(), async (req, res) => {
     );
 
     const reply = response.data.content[0].text;
-    console.log(`✓ Voice response generated`);
+    taskLog.completed++;
+
+    console.log(`✓ Task complete. Execution time: immediate`);
 
     res.json({ text: reply });
   } catch (error) {
-    console.error('Voice API error:', error.message);
-    res.status(500).json({ text: 'Error processing your directive.' });
+    console.error('Error:', error.message);
+    res.status(500).json({ text: 'I am afraid that directive cannot be processed at this time, sir.' });
   }
 });
 
