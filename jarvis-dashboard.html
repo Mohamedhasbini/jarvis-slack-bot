@@ -632,8 +632,36 @@
 
         function speakJarvis(text) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.85;
-            utterance.pitch = 0.8;
+
+            // Jarvis voice settings - authentic Iron Man JARVIS
+            utterance.rate = 0.8;      // Calm, deliberate pace
+            utterance.pitch = 0.75;    // Deep, sophisticated tone
+            utterance.volume = 1;
+
+            // Select best available voice (British male preferred)
+            const voices = window.speechSynthesis.getVoices();
+
+            // Priority order for Jarvis voice
+            const preferredVoices = [
+                voice => voice.name.includes('Google UK') && voice.lang.includes('en-GB'),
+                voice => voice.name.includes('British') && voice.lang.includes('en'),
+                voice => voice.name.includes('Daniel') && voice.lang.includes('en'),
+                voice => voice.name.includes('Male') && voice.lang.includes('en-GB'),
+                voice => voice.lang.includes('en-GB'),
+                voice => voice.lang.includes('en-US') && voice.name.includes('Male')
+            ];
+
+            let selectedVoice = null;
+            for (let matcher of preferredVoices) {
+                selectedVoice = voices.find(matcher);
+                if (selectedVoice) break;
+            }
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            window.speechSynthesis.cancel(); // Cancel any previous speech
             window.speechSynthesis.speak(utterance);
         }
 
