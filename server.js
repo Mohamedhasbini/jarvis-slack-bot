@@ -103,10 +103,14 @@ async function handleMention(event) {
 
     const reply = response.data.content[0].text;
 
+    // Sign response as Jarvis
+    const jarvisSignature = `\n\n---\n_Sent using @Jarvis Orchestrator_`;
+    const fullReply = reply + jarvisSignature;
+
     // Post to Slack
     await axios.post(
       'https://slack.com/api/chat.postMessage',
-      { channel, text: reply, thread_ts: ts },
+      { channel, text: fullReply, thread_ts: ts },
       { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } }
     );
 
