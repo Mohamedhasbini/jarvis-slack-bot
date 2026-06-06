@@ -383,13 +383,21 @@ app.post('/slack/events', (req, res) => {
     return res.status(200).json({ challenge });
   }
 
-  // Handle message events
-  if (type === 'event_callback' && event?.type === 'app_mention') {
-    if (!verifySlackRequest(req)) {
-      console.log('❌ Invalid signature');
-      return res.status(401).send('Unauthorized');
+  // Handle message events - both app_mention and message events (for thread replies)
+  if (type === 'event_callback') {
+    const isAppMention = event?.type === 'app_mention';
+    const isThreadReplyWithMention = event?.type === 'message' &&
+      event?.thread_ts &&
+      event?.text?.includes('<@') &&
+      !event?.bot_id; // Ignore bot messages to prevent loops
+
+    if (isAppMention || isThreadReplyWithMention) {
+      if (!verifySlackRequest(req)) {
+        console.log('❌ Invalid signature');
+        return res.status(401).send('Unauthorized');
+      }
+      handleMention(event);
     }
-    handleMention(event);
   }
 
   res.json({ ok: true });
