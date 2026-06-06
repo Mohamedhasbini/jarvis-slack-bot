@@ -219,10 +219,14 @@ class JarvisDesktopAgent:
             for app in APPS.keys():
                 if app in message_lower:
                     return self.open_app(app)
-            # Try to extract URL
-            if 'http' in message_lower or '.com' in message_lower:
-                url = message.split()[-1]
-                return self.open_url(url)
+            # Try to extract URL - find word containing domain pattern
+            words = message.split()
+            for word in words:
+                word_lower = word.lower()
+                if word_lower.startswith('http://') or word_lower.startswith('https://'):
+                    return self.open_url(word)
+                if any(tld in word_lower for tld in ['.com', '.org', '.net', '.io', '.co', '.edu', '.gov']):
+                    return self.open_url(word)
 
         # WEB SEARCH
         if any(word in message_lower for word in ['search', 'google', 'find']):
