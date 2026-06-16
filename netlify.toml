@@ -1,0 +1,24 @@
+[[redirects]]
+  from = "/"
+  to = "/pricing.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/inference-dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/tos"
+  to = "/tos.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/reset-password"
+  to = "/reset-password.html"
+  status = 200
