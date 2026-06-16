@@ -10,97 +10,214 @@
     --surface: #12121a;
     --border: #1e1e2e;
     --accent: #00d4ff;
-    --accent2: #7c3aed;
     --text: #e2e8f0;
     --muted: #64748b;
     --green: #10b981;
     --red: #ef4444;
     --yellow: #f59e0b;
+    --sidebar: 220px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; display: flex; min-height: 100vh; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
 
-  /* Sidebar */
-  aside { width: 220px; border-right: 1px solid var(--border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0; }
-  .sidebar-logo { font-size: 1rem; font-weight: 700; color: var(--accent); padding: 0.75rem; margin-bottom: 1rem; }
+  /* ── App shell ──────────────────────────────── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar (desktop) ──────────────────────── */
+  aside {
+    width: var(--sidebar); border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem; display: flex; flex-direction: column;
+    gap: 0.2rem; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .sidebar-logo { font-size: 1rem; font-weight: 700; color: var(--accent); padding: 0.6rem 0.75rem; margin-bottom: 0.75rem; }
   .sidebar-logo span { color: var(--text); }
-  .nav-item { padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9rem; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .nav-item {
+    padding: 0.65rem 0.75rem; border-radius: 8px; font-size: 0.875rem;
+    color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none;
+  }
   .nav-item:hover, .nav-item.active { background: rgba(0,212,255,0.08); color: var(--text); }
   .nav-item.active { color: var(--accent); }
   .sidebar-bottom { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
-  .user-email { font-size: 0.75rem; color: var(--muted); padding: 0.5rem 0.75rem; }
-  .logout-btn { width: 100%; padding: 0.6rem 0.75rem; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+  .user-email { font-size: 0.72rem; color: var(--muted); padding: 0.4rem 0.75rem; word-break: break-all; }
+  .logout-btn {
+    width: 100%; padding: 0.6rem 0.75rem; background: none;
+    border: 1px solid var(--border); color: var(--muted); border-radius: 8px;
+    cursor: pointer; font-size: 0.85rem; text-align: left; margin-top: 0.5rem;
+  }
   .logout-btn:hover { border-color: var(--muted); color: var(--text); }
 
-  /* Main */
-  main { flex: 1; overflow-y: auto; }
-  .topbar { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .page-title { font-size: 1.25rem; font-weight: 700; }
-  .balance-pill { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--green); padding: 0.35rem 0.9rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+  /* ── Main ───────────────────────────────────── */
+  main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-  .content { padding: 2rem; }
+  /* Verification banner */
+  #verify-banner {
+    display: none; background: rgba(245,158,11,0.08);
+    border-bottom: 1px solid rgba(245,158,11,0.25);
+    padding: 0.75rem 1.5rem; gap: 0.75rem; flex-wrap: wrap;
+    align-items: center; justify-content: space-between;
+  }
+  #verify-banner span { font-size: 0.85rem; color: var(--yellow); }
+  #resend-btn {
+    background: none; border: 1px solid rgba(245,158,11,.4); color: var(--yellow);
+    padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer;
+    font-size: 0.8rem; font-weight: 600; white-space: nowrap; min-height: 36px;
+  }
 
-  /* Stat cards */
-  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
-  .stat-card-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
-  .stat-card-value { font-size: 1.75rem; font-weight: 800; }
-  .stat-card-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+  /* Topbar */
+  .topbar {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  .page-title { font-size: 1.1rem; font-weight: 700; }
+  .balance-pill {
+    background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+    color: var(--green); padding: 0.3rem 0.8rem; border-radius: 999px;
+    font-size: 0.82rem; font-weight: 600; white-space: nowrap;
+  }
 
-  /* Section */
-  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
-  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-  .section-title { font-size: 1rem; font-weight: 700; }
+  .content { padding: 1.5rem; flex: 1; }
 
-  /* API Keys */
-  .key-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+  /* ── Stat cards ─────────────────────────────── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.875rem; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+  .stat-card-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+  .stat-card-value { font-size: 1.5rem; font-weight: 800; }
+  .stat-card-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* ── Section cards ──────────────────────────── */
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .section-title { font-size: 0.95rem; font-weight: 700; }
+
+  /* ── API Keys ───────────────────────────────── */
+  .key-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 0.75rem; }
   .key-row:last-child { border-bottom: none; }
-  .key-name { font-weight: 600; font-size: 0.9rem; }
-  .key-preview { font-family: monospace; font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
-  .key-meta { font-size: 0.75rem; color: var(--muted); }
-  .revoke-btn { background: none; border: 1px solid var(--border); color: var(--red); padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+  .key-info { min-width: 0; }
+  .key-name { font-weight: 600; font-size: 0.875rem; }
+  .key-preview { font-family: monospace; font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .key-meta { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+  .revoke-btn {
+    background: none; border: 1px solid var(--border); color: var(--red);
+    padding: 0.35rem 0.7rem; border-radius: 6px; cursor: pointer;
+    font-size: 0.8rem; flex-shrink: 0; min-height: 36px; white-space: nowrap;
+  }
   .revoke-btn:hover { background: rgba(239,68,68,0.08); }
 
   /* Create key form */
-  .create-key-form { display: flex; gap: 0.75rem; }
-  .create-key-form input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none; }
+  .create-key-form { display: flex; gap: 0.6rem; }
+  .create-key-form input {
+    flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.65rem 0.9rem; border-radius: 8px;
+    font-size: 16px; outline: none; -webkit-appearance: none;
+  }
   .create-key-form input:focus { border-color: var(--accent); }
-  .create-key-form button { background: var(--accent); color: #000; border: none; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
+  .create-key-form button {
+    background: var(--accent); color: #000; border: none;
+    padding: 0.65rem 1rem; border-radius: 8px; font-weight: 700;
+    cursor: pointer; font-size: 0.875rem; white-space: nowrap; min-height: 44px;
+  }
 
   /* New key reveal */
   .new-key-box { background: var(--bg); border: 1px solid var(--green); border-radius: 8px; padding: 1rem; margin-top: 1rem; display: none; }
-  .new-key-box label { font-size: 0.75rem; color: var(--green); font-weight: 700; display: block; margin-bottom: 0.4rem; }
-  .new-key-box code { font-family: monospace; font-size: 0.8rem; word-break: break-all; }
+  .new-key-box label { font-size: 0.72rem; color: var(--green); font-weight: 700; display: block; margin-bottom: 0.35rem; }
+  .new-key-box code { font-family: monospace; font-size: 0.78rem; word-break: break-all; line-height: 1.5; }
 
-  /* Usage table */
-  .usage-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .usage-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
-  .usage-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--muted); }
+  /* ── Usage table ────────────────────────────── */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .usage-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 0.82rem; }
+  .usage-table th {
+    text-align: left; color: var(--muted); font-weight: 600;
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .usage-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
   .usage-table td:first-child { color: var(--text); }
   .usage-table tr:last-child td { border-bottom: none; }
 
-  /* Top-up */
-  .topup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-  .topup-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+  /* ── Billing / topup ────────────────────────── */
+  .topup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; }
+  .topup-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.25rem 1rem; text-align: center; cursor: pointer;
+    transition: border-color 0.2s; min-height: 80px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
   .topup-card:hover { border-color: var(--accent); }
-  .topup-amount { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
-  .topup-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+  .topup-amount { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+  .topup-label { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
 
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* Login overlay */
-  #login-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; }
-  .login-box h2 { margin-bottom: 1.5rem; }
-  .login-box .form-group { margin-bottom: 1rem; }
-  .login-box label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 600; }
-  .login-box input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none; }
+  /* ── Mobile bottom nav ──────────────────────── */
+  .mobile-nav {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    z-index: 50; padding: 0; safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-nav-inner { display: flex; }
+  .mobile-nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0.6rem 0.25rem; cursor: pointer; color: var(--muted);
+    font-size: 0.65rem; font-weight: 600; gap: 0.2rem; min-height: 56px;
+    border: none; background: none; transition: color 0.15s;
+  }
+  .mobile-nav-item .icon { font-size: 1.2rem; line-height: 1; }
+  .mobile-nav-item.active { color: var(--accent); }
+
+  /* ── Login overlay ──────────────────────────── */
+  #login-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 1rem;
+  }
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px;
+  }
+  .login-box h2 { margin-bottom: 1.25rem; font-size: 1.3rem; }
+  .login-box .form-group { margin-bottom: 0.9rem; }
+  .login-box label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 600; }
+  .login-box input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.7rem 1rem; border-radius: 8px;
+    font-size: 16px; outline: none; -webkit-appearance: none;
+  }
   .login-box input:focus { border-color: var(--accent); }
-  .login-box button { width: 100%; background: var(--accent); color: #000; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; }
-  #login-error { color: var(--red); font-size: 0.85rem; margin-top: 0.5rem; text-align: center; }
-  .login-footer { text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+  .login-box button {
+    width: 100%; background: var(--accent); color: #000; border: none;
+    padding: 0.8rem; border-radius: 8px; font-weight: 700;
+    cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; min-height: 48px;
+  }
+  #login-error { color: var(--red); font-size: 0.82rem; margin-top: 0.5rem; text-align: center; min-height: 1.2em; }
+  .login-footer { text-align: center; margin-top: 0.875rem; font-size: 0.82rem; color: var(--muted); line-height: 1.8; }
   .login-footer a { color: var(--accent); text-decoration: none; }
+
+  /* ── Quick start code ───────────────────────── */
+  pre { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-size: 0.78rem; line-height: 1.7; overflow-x: auto; -webkit-overflow-scrolling: touch; color: #94a3b8; }
+
+  /* ── Responsive ─────────────────────────────── */
+  @media (max-width: 768px) {
+    aside { display: none; }
+    .mobile-nav { display: flex; }
+    main { padding-bottom: 60px; } /* space for bottom nav */
+
+    .content { padding: 1rem; }
+    .topbar { padding: 0.875rem 1rem; }
+
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.625rem; }
+    .stat-card-value { font-size: 1.25rem; }
+
+    .topup-grid { grid-template-columns: 1fr; gap: 0.625rem; }
+
+    .create-key-form { flex-direction: column; }
+    .create-key-form button { align-self: flex-start; }
+  }
+
+  @media (max-width: 400px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .login-box { padding: 1.5rem 1.25rem; }
+  }
 </style>
 </head>
 <body>
@@ -108,92 +225,93 @@
 <!-- Login overlay -->
 <div id="login-overlay">
   <div class="login-box" id="login-panel">
-    <h2>Sign in to Jarvis Inference</h2>
+    <h2>Sign in</h2>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="login-email" placeholder="you@company.com">
+      <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" inputmode="email">
     </div>
     <div class="form-group">
       <label>Password</label>
-      <input type="password" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')login()">
     </div>
     <button onclick="login()">Sign In</button>
     <p id="login-error"></p>
     <div class="login-footer">
-      <a href="#" onclick="showForgotPanel();return false">Forgot password?</a> ·
+      <a href="#" onclick="showForgotPanel();return false">Forgot password?</a><br>
       No account? <a href="/">Get started free</a>
     </div>
   </div>
   <div class="login-box" id="forgot-panel" style="display:none">
     <h2>Reset password</h2>
-    <p style="color:var(--muted);font-size:.875rem;margin-bottom:1.25rem">Enter your email and we'll send a reset link.</p>
+    <p style="color:var(--muted);font-size:.875rem;margin-bottom:1.1rem">Enter your email and we'll send a reset link.</p>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="forgot-email" placeholder="you@company.com">
+      <input type="email" id="forgot-email" placeholder="you@company.com" inputmode="email">
     </div>
     <button onclick="forgotPassword()">Send Reset Link</button>
-    <p id="forgot-msg" style="font-size:.85rem;margin-top:.75rem;text-align:center"></p>
-    <div class="login-footer"><a href="#" onclick="showLoginPanel();return false">Back to sign in</a></div>
+    <p id="forgot-msg" style="font-size:.82rem;margin-top:.6rem;text-align:center"></p>
+    <div class="login-footer"><a href="#" onclick="showLoginPanel();return false">← Back to sign in</a></div>
   </div>
 </div>
 
-<!-- Email verification banner -->
-<div id="verify-banner" style="display:none;background:rgba(245,158,11,0.08);border-bottom:1px solid rgba(245,158,11,0.25);padding:.75rem 2rem;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between">
-  <span style="font-size:.875rem;color:#f59e0b">⚠ <strong>Email not verified.</strong> Your API keys won't work until you verify your email.</span>
-  <button id="resend-btn" onclick="resendVerification()" style="background:none;border:1px solid rgba(245,158,11,.4);color:#f59e0b;padding:.35rem .9rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600">Resend verification email</button>
-</div>
+<div class="app">
+  <!-- Desktop sidebar -->
+  <aside>
+    <div class="sidebar-logo">Jarvis<span> Inference</span></div>
+    <div class="nav-item active" onclick="showTab('overview')">Overview</div>
+    <div class="nav-item" onclick="showTab('keys')">API Keys</div>
+    <div class="nav-item" onclick="showTab('usage')">Usage</div>
+    <div class="nav-item" onclick="showTab('billing')">Billing</div>
+    <div class="sidebar-bottom">
+      <div class="user-email" id="user-email-display"></div>
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
 
-<!-- Sidebar -->
-<aside>
-  <div class="sidebar-logo">Jarvis<span> Inference</span></div>
-  <div class="nav-item active" onclick="showTab('overview')">Overview</div>
-  <div class="nav-item" onclick="showTab('keys')">API Keys</div>
-  <div class="nav-item" onclick="showTab('usage')">Usage</div>
-  <div class="nav-item" onclick="showTab('billing')">Billing</div>
-  <div class="sidebar-bottom">
-    <div class="user-email" id="user-email-display"></div>
-    <button class="logout-btn" onclick="logout()">Sign Out</button>
-  </div>
-</aside>
+  <!-- Main -->
+  <main>
+    <!-- Verification banner -->
+    <div id="verify-banner">
+      <span>⚠ <strong>Email not verified.</strong> API keys won't work until you verify your email.</span>
+      <button id="resend-btn" onclick="resendVerification()">Resend verification email</button>
+    </div>
 
-<!-- Main content -->
-<main>
-  <div class="topbar">
-    <div class="page-title" id="page-title">Overview</div>
-    <div class="balance-pill">Balance: $<span id="balance-display">—</span></div>
-  </div>
-  <div class="content">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Overview</div>
+      <div class="balance-pill">$<span id="balance-display">—</span></div>
+    </div>
 
-    <!-- Overview tab -->
-    <div class="tab-content active" id="tab-overview">
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-card-label">Balance</div>
-          <div class="stat-card-value" id="stat-balance">—</div>
-          <div class="stat-card-sub">Available credits</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Requests (MTD)</div>
-          <div class="stat-card-value" id="stat-requests">—</div>
-          <div class="stat-card-sub">This month</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Input Tokens (MTD)</div>
-          <div class="stat-card-value" id="stat-input">—</div>
-          <div class="stat-card-sub">Million tokens</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Spend (MTD)</div>
-          <div class="stat-card-value" id="stat-spend">—</div>
-          <div class="stat-card-sub">This month</div>
-        </div>
-      </div>
+    <div class="content">
 
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Quick Start</div>
+      <!-- Overview tab -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-card-label">Balance</div>
+            <div class="stat-card-value" id="stat-balance">—</div>
+            <div class="stat-card-sub">Available credits</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Requests MTD</div>
+            <div class="stat-card-value" id="stat-requests">—</div>
+            <div class="stat-card-sub">This month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Input Tokens MTD</div>
+            <div class="stat-card-value" id="stat-input">—</div>
+            <div class="stat-card-sub">Million tokens</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Spend MTD</div>
+            <div class="stat-card-value" id="stat-spend">—</div>
+            <div class="stat-card-sub">This month</div>
+          </div>
         </div>
-        <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-size:0.8rem;line-height:1.7;overflow-x:auto;color:#94a3b8"><code>from openai import OpenAI
+
+        <div class="section">
+          <div class="section-header"><div class="section-title">Quick Start</div></div>
+          <pre><code>from openai import OpenAI
 
 client = OpenAI(
     base_url="<span id="qs-base-url">https://api.jarvis-inference.com/v1</span>",
@@ -205,68 +323,81 @@ response = client.chat.completions.create(
     messages=[{"role": "user", "content": "Hello!"}]
 )
 print(response.choices[0].message.content)</code></pre>
+        </div>
       </div>
-    </div>
 
-    <!-- API Keys tab -->
-    <div class="tab-content" id="tab-keys">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Create New Key</div>
-        </div>
-        <div class="create-key-form">
-          <input type="text" id="key-name-input" placeholder="Key name (e.g. Production)">
-          <button onclick="createKey()">+ Create Key</button>
-        </div>
-        <div class="new-key-box" id="new-key-box">
-          <label>NEW API KEY — Copy and save this now. It won't be shown again.</label>
-          <code id="new-key-value"></code>
-        </div>
-      </div>
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Your API Keys</div>
-        </div>
-        <div id="keys-list"><p style="color:var(--muted);font-size:0.9rem">Loading...</p></div>
-      </div>
-    </div>
-
-    <!-- Usage tab -->
-    <div class="tab-content" id="tab-usage">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Recent Requests</div>
-        </div>
-        <div id="usage-table-container"><p style="color:var(--muted);font-size:0.9rem">Loading...</p></div>
-      </div>
-    </div>
-
-    <!-- Billing tab -->
-    <div class="tab-content" id="tab-billing">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Top Up Credits</div>
-        </div>
-        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.25rem">Credits are added instantly after payment.</p>
-        <div class="topup-grid" id="topup-grid">
-          <div class="topup-card" onclick="topup('credits_10')">
-            <div class="topup-amount">$10</div>
-            <div class="topup-label">10 credits</div>
+      <!-- API Keys tab -->
+      <div class="tab-content" id="tab-keys">
+        <div class="section">
+          <div class="section-header"><div class="section-title">Create New Key</div></div>
+          <div class="create-key-form">
+            <input type="text" id="key-name-input" placeholder="Key name (e.g. Production)" autocomplete="off">
+            <button onclick="createKey()">+ Create Key</button>
           </div>
-          <div class="topup-card" onclick="topup('credits_25')">
-            <div class="topup-amount">$25</div>
-            <div class="topup-label">25 credits</div>
+          <div class="new-key-box" id="new-key-box">
+            <label>NEW API KEY — Copy and save this now. It won't be shown again.</label>
+            <code id="new-key-value"></code>
           </div>
-          <div class="topup-card" onclick="topup('credits_100')">
-            <div class="topup-amount">$100</div>
-            <div class="topup-label">100 credits</div>
+        </div>
+        <div class="section">
+          <div class="section-header"><div class="section-title">Your API Keys</div></div>
+          <div id="keys-list"><p style="color:var(--muted);font-size:.875rem">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- Usage tab -->
+      <div class="tab-content" id="tab-usage">
+        <div class="section">
+          <div class="section-header"><div class="section-title">Recent Requests</div></div>
+          <div class="table-scroll" id="usage-table-container">
+            <p style="color:var(--muted);font-size:.875rem">Loading...</p>
           </div>
         </div>
       </div>
-    </div>
 
+      <!-- Billing tab -->
+      <div class="tab-content" id="tab-billing">
+        <div class="section">
+          <div class="section-header"><div class="section-title">Top Up Credits</div></div>
+          <p style="color:var(--muted);font-size:.875rem;margin-bottom:1.1rem">Credits are added instantly after payment. Unused credits never expire.</p>
+          <div class="topup-grid">
+            <div class="topup-card" onclick="topup('credits_10')">
+              <div class="topup-amount">$10</div>
+              <div class="topup-label">~20M input tokens</div>
+            </div>
+            <div class="topup-card" onclick="topup('credits_25')">
+              <div class="topup-amount">$25</div>
+              <div class="topup-label">~50M input tokens</div>
+            </div>
+            <div class="topup-card" onclick="topup('credits_100')">
+              <div class="topup-amount">$100</div>
+              <div class="topup-label">~200M input tokens</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /app -->
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-item active" onclick="showTab('overview')" data-tab="overview">
+      <span class="icon">📊</span><span>Overview</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showTab('keys')" data-tab="keys">
+      <span class="icon">🗝️</span><span>Keys</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showTab('usage')" data-tab="usage">
+      <span class="icon">📈</span><span>Usage</span>
+    </button>
+    <button class="mobile-nav-item" onclick="showTab('billing')" data-tab="billing">
+      <span class="icon">💳</span><span>Billing</span>
+    </button>
   </div>
-</main>
+</nav>
 
 <script>
 const API_BASE = window.location.origin;
@@ -274,13 +405,15 @@ let token = localStorage.getItem('jarvis_token');
 let usageData = null;
 
 async function api(path, opts = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
-  if (res.status === 401) { logout(); return null; }
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    if (res.status === 401) { logout(); return null; }
+    return res.json();
+  } catch { return null; }
 }
 
 function showForgotPanel() {
@@ -293,7 +426,7 @@ function showLoginPanel() {
 }
 
 async function login() {
-  const email = document.getElementById('login-email').value;
+  const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const err = document.getElementById('login-error');
   err.textContent = '';
@@ -308,7 +441,6 @@ async function login() {
 
   token = data.token;
   localStorage.setItem('jarvis_token', token);
-  document.getElementById('user-email-display').textContent = data.user.email;
   document.getElementById('login-overlay').style.display = 'none';
   loadAll();
 }
@@ -333,18 +465,23 @@ async function resendVerification() {
   setTimeout(() => { btn.disabled = false; btn.textContent = 'Resend verification email'; }, 5000);
 }
 
-function logout() {
-  localStorage.removeItem('jarvis_token');
-  location.reload();
-}
+function logout() { localStorage.removeItem('jarvis_token'); location.reload(); }
+
+const PAGE_TITLES = { overview: 'Overview', keys: 'API Keys', usage: 'Usage', billing: 'Billing' };
 
 function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+
   document.getElementById(`tab-${name}`).classList.add('active');
-  document.querySelector(`[onclick="showTab('${name}')"]`).classList.add('active');
-  document.getElementById('page-title').textContent = { overview: 'Overview', keys: 'API Keys', usage: 'Usage', billing: 'Billing' }[name];
+  document.querySelector(`.nav-item[onclick="showTab('${name}')"]`)?.classList.add('active');
+  document.querySelector(`.mobile-nav-item[data-tab="${name}"]`)?.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[name];
+
   if (name === 'usage') renderUsageTable();
+  // Scroll to top of content on mobile tab switch
+  if (window.innerWidth <= 768) window.scrollTo(0, 0);
 }
 
 async function loadAll() {
@@ -360,13 +497,10 @@ async function loadAll() {
   document.getElementById('stat-spend').textContent = `$${usage.current_period.total_cost.toFixed(4)}`;
   document.getElementById('qs-base-url').textContent = `${window.location.origin}/v1`;
 
-  // Show verification banner if email not verified
   if (!me.is_email_verified) {
-    const banner = document.getElementById('verify-banner');
-    banner.style.display = 'flex';
+    document.getElementById('verify-banner').style.display = 'flex';
   }
 
-  // Show payment feedback from Stripe redirect
   const params = new URLSearchParams(location.search);
   if (params.get('payment') === 'success') {
     alert('✅ Payment confirmed! Credits have been added to your account.');
@@ -384,27 +518,26 @@ async function loadKeys() {
   const keys = await api('/api/keys');
   if (!keys) return;
   const container = document.getElementById('keys-list');
-  if (keys.length === 0) {
-    container.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No API keys yet. Create one above.</p>';
+  if (!keys.length) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:.875rem">No API keys yet. Create one above.</p>';
     return;
   }
   container.innerHTML = keys.map(k => `
     <div class="key-row">
-      <div>
-        <div class="key-name">${k.name}</div>
-        <div class="key-preview">${k.key_preview}</div>
-        <div class="key-meta">Created ${new Date(k.created_at).toLocaleDateString()}${k.last_used ? ` · Last used ${new Date(k.last_used).toLocaleDateString()}` : ''}</div>
+      <div class="key-info">
+        <div class="key-name">${escHtml(k.name)}</div>
+        <div class="key-preview">${escHtml(k.key_preview)}</div>
+        <div class="key-meta">Created ${new Date(k.created_at).toLocaleDateString()}${k.last_used ? ' · Last used ' + new Date(k.last_used).toLocaleDateString() : ''}</div>
       </div>
-      <button class="revoke-btn" onclick="revokeKey('${k.id}', '${k.name}')">Revoke</button>
-    </div>
-  `).join('');
+      <button class="revoke-btn" onclick="revokeKey('${k.id}', '${escHtml(k.name)}')">Revoke</button>
+    </div>`).join('');
 }
 
 async function createKey() {
   const name = document.getElementById('key-name-input').value.trim();
-  if (!name) return alert('Please enter a key name');
+  if (!name) { alert('Please enter a key name'); return; }
   const key = await api('/api/keys', { method: 'POST', body: { name } });
-  if (!key || key.error) return alert(key?.error || 'Failed to create key');
+  if (!key || key.error) { alert(key?.error || 'Failed to create key'); return; }
   document.getElementById('new-key-value').textContent = key.key;
   document.getElementById('new-key-box').style.display = 'block';
   document.getElementById('key-name-input').value = '';
@@ -421,31 +554,31 @@ function renderUsageTable() {
   if (!usageData) return;
   const rows = usageData.recent_requests;
   const container = document.getElementById('usage-table-container');
-  if (rows.length === 0) {
-    container.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No requests yet. Make your first API call!</p>';
+  if (!rows.length) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:.875rem">No requests yet. Make your first API call!</p>';
     return;
   }
   container.innerHTML = `
     <table class="usage-table">
-      <thead><tr>
-        <th>Time</th><th>Model</th><th>Input Tokens</th><th>Output Tokens</th><th>Cost</th>
-      </tr></thead>
-      <tbody>
-        ${rows.map(r => `<tr>
-          <td>${new Date(r.timestamp).toLocaleString()}</td>
-          <td>${r.model}</td>
-          <td>${r.input_tokens.toLocaleString()}</td>
-          <td>${r.output_tokens.toLocaleString()}</td>
-          <td>$${parseFloat(r.cost).toFixed(6)}</td>
-        </tr>`).join('')}
-      </tbody>
+      <thead><tr><th>Time</th><th>Model</th><th>In Tokens</th><th>Out Tokens</th><th>Cost</th></tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${new Date(r.timestamp).toLocaleString()}</td>
+        <td>${escHtml(r.model)}</td>
+        <td>${r.input_tokens.toLocaleString()}</td>
+        <td>${r.output_tokens.toLocaleString()}</td>
+        <td>$${parseFloat(r.cost).toFixed(6)}</td>
+      </tr>`).join('')}</tbody>
     </table>`;
 }
 
 async function topup(packageId) {
   const result = await api('/api/billing/topup', { method: 'POST', body: { package_id: packageId } });
   if (result?.checkout_url) window.location.href = result.checkout_url;
-  else alert(result?.error || 'Failed to create checkout session');
+  else alert(result?.error || 'Failed to create checkout session. Make sure billing is configured.');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // Init
