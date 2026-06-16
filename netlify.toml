@@ -1,0 +1,9 @@
+[[redirects]]
+  from = "/"
+  to = "/pricing.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/inference-dashboard.html"
+  status = 200
