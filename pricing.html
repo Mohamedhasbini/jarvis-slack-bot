@@ -330,19 +330,31 @@ response = client.<span class="func">chat.completions.create</span>(
         <label for="password">Password</label>
         <input type="password" id="password" placeholder="8+ characters" minlength="8" required>
       </div>
-      <button type="submit" class="form-submit">Create Account & Get API Key</button>
+      <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1.25rem">
+        <input type="checkbox" id="tos" style="width:auto;margin:3px 0 0;flex-shrink:0" required>
+        <label for="tos" style="color:var(--muted);font-size:.85rem;font-weight:400;cursor:pointer">
+          I agree to the <a href="/tos" target="_blank" style="color:var(--accent)">Terms of Service</a> and
+          <a href="/privacy" target="_blank" style="color:var(--accent)">Privacy Policy</a>.
+          I understand that disposable emails are blocked and my account requires email verification.
+        </label>
+      </div>
+      <button type="submit" class="form-submit">Create Account — $5 Free Credits</button>
       <p id="status-msg"></p>
     </form>
     <div class="api-key-result" id="api-key-result">
-      <div class="key-label">YOUR API KEY (save this — shown once)</div>
-      <div id="api-key-value"></div>
+      <div class="key-label">CHECK YOUR EMAIL — verification required before API keys activate</div>
+      <div id="api-key-value" style="margin-top:.5rem;color:#94a3b8;font-size:.85rem;font-family:inherit"></div>
     </div>
     <div class="form-footer">Already have an account? <a href="/dashboard">Go to Dashboard</a></div>
   </div>
 </section>
 
 <footer>
-  <p>© 2024 Jarvis Inference · <a href="mailto:hello@jarvis-inference.com" style="color:var(--muted)">hello@jarvis-inference.com</a></p>
+  <p>© 2024 Jarvis Inference ·
+    <a href="/tos" style="color:var(--muted)">Terms of Service</a> ·
+    <a href="/privacy" style="color:var(--muted)">Privacy Policy</a> ·
+    <a href="mailto:hello@jarvis-inference.com" style="color:var(--muted)">Contact</a>
+  </p>
 </footer>
 
 <script>
@@ -375,32 +387,25 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
       status.textContent = data.error || 'Sign up failed. Please try again.';
       status.style.color = '#ef4444';
       btn.disabled = false;
-      btn.textContent = 'Create Account & Get API Key';
+      btn.textContent = 'Create Account — $5 Free Credits';
       return;
     }
 
-    // Auto-create first API key
-    const keyRes = await fetch(`${API_BASE}/api/keys`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.token}` },
-      body: JSON.stringify({ name: 'Default Key' }),
-    });
-    const keyData = await keyRes.json();
+    localStorage.setItem('jarvis_token', data.token);
 
-    document.getElementById('api-key-value').textContent = keyData.key;
+    document.getElementById('api-key-value').textContent =
+      '✉ A verification email has been sent to ' + payload.email +
+      '. Click the link to activate your account and API keys. Check your spam folder if you don\'t see it.';
     document.getElementById('api-key-result').style.display = 'block';
     document.getElementById('signup-form').style.display = 'none';
 
-    // Store token for dashboard
-    localStorage.setItem('jarvis_token', data.token);
-
-    status.textContent = '✓ Account created! Your API key is below. Save it now.';
+    status.textContent = '✓ Account created! Please verify your email to get started.';
     status.style.color = '#10b981';
   } catch (err) {
     status.textContent = 'Network error. Please try again.';
     status.style.color = '#ef4444';
     btn.disabled = false;
-    btn.textContent = 'Create Account & Get API Key';
+    btn.textContent = 'Create Account — $5 Free Credits';
   }
 });
 </script>

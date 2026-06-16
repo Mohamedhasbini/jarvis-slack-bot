@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Jarvis Inference</title>
+<style>
+  :root{--bg:#0a0a0f;--surface:#12121a;--border:#1e1e2e;--accent:#00d4ff;--text:#e2e8f0;--muted:#64748b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.7}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 2rem;border-bottom:1px solid var(--border)}
+  .logo{font-size:1.1rem;font-weight:700;color:var(--accent);text-decoration:none}.logo span{color:var(--text)}
+  nav a{color:var(--muted);text-decoration:none;font-size:.9rem}
+  .container{max-width:760px;margin:0 auto;padding:4rem 2rem}
+  h1{font-size:2rem;font-weight:800;margin-bottom:.5rem}
+  .meta{color:var(--muted);font-size:.9rem;margin-bottom:3rem}
+  h2{font-size:1.1rem;font-weight:700;margin:2.5rem 0 .75rem;color:var(--accent)}
+  p,li{color:#94a3b8;font-size:.95rem;margin-bottom:.75rem}
+  ul{padding-left:1.5rem;margin-bottom:.75rem}
+  li{margin-bottom:.4rem}
+  strong{color:var(--text)}
+  table{width:100%;border-collapse:collapse;margin:1rem 0}
+  th,td{padding:.75rem;text-align:left;border-bottom:1px solid var(--border);font-size:.9rem}
+  th{color:var(--muted);font-weight:600}
+  td{color:#94a3b8}
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">Jarvis<span> Inference</span></a>
+  <a href="/dashboard">Dashboard</a>
+</nav>
+
+<div class="container">
+  <h1>Privacy Policy</h1>
+  <div class="meta">Last updated: June 2024</div>
+
+  <h2>1. What We Collect</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Purpose</th><th>Retention</th></tr></thead>
+    <tbody>
+      <tr><td>Email address</td><td>Account identification, billing, notifications</td><td>Until account deletion</td></tr>
+      <tr><td>Password (hashed)</td><td>Authentication</td><td>Until account deletion</td></tr>
+      <tr><td>Name (optional)</td><td>Personalisation</td><td>Until account deletion</td></tr>
+      <tr><td>IP address at signup</td><td>Fraud prevention</td><td>90 days</td></tr>
+      <tr><td>Token counts per request</td><td>Billing & usage dashboard</td><td>12 months</td></tr>
+      <tr><td>Payment information</td><td>Processed by Stripe (we never see card numbers)</td><td>Per Stripe policy</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. What We Do NOT Collect</h2>
+  <ul>
+    <li><strong>Prompt content</strong> — your messages to the API are not stored or logged.</li>
+    <li><strong>Model outputs</strong> — completions are not retained after delivery.</li>
+    <li><strong>Browsing behaviour</strong> — we do not use third-party tracking pixels or analytics.</li>
+  </ul>
+
+  <h2>3. How We Use Your Data</h2>
+  <ul>
+    <li>To provide and improve the Service.</li>
+    <li>To calculate and charge for usage.</li>
+    <li>To send transactional emails (verification, receipts, low-balance alerts).</li>
+    <li>To detect and prevent fraud and abuse.</li>
+    <li>To comply with legal obligations.</li>
+  </ul>
+  <p>We do <strong>not</strong> sell your data to third parties. We do not use your data for advertising.</p>
+
+  <h2>4. Inference Data</h2>
+  <p>When you call <code style="font-family:monospace;background:var(--surface);padding:2px 6px;border-radius:4px">/v1/chat/completions</code>, your prompt is forwarded to our GPU inference backend and the completion is returned to you. <strong>Neither the prompt nor the response is logged or stored.</strong> The only data recorded is token counts and cost for billing purposes.</p>
+
+  <h2>5. Third-Party Processors</h2>
+  <table>
+    <thead><tr><th>Processor</th><th>Purpose</th><th>Data Shared</th></tr></thead>
+    <tbody>
+      <tr><td>Stripe</td><td>Payment processing</td><td>Email, payment amount</td></tr>
+      <tr><td>Supabase</td><td>Database hosting</td><td>Account + usage data</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. Security</h2>
+  <ul>
+    <li>Passwords are hashed with bcrypt (cost factor 12).</li>
+    <li>All data in transit is encrypted via TLS.</li>
+    <li>API keys are stored hashed and shown once at creation.</li>
+    <li>Accounts lock after 10 failed login attempts.</li>
+    <li>Disposable email addresses are blocked at registration.</li>
+    <li>Stripe Radar fraud detection is active on all payments.</li>
+  </ul>
+
+  <h2>7. Your Rights</h2>
+  <p>You may at any time:</p>
+  <ul>
+    <li><strong>Access</strong> your data via the dashboard or by emailing us.</li>
+    <li><strong>Correct</strong> inaccurate information in account settings.</li>
+    <li><strong>Delete</strong> your account and all associated data by emailing us.</li>
+    <li><strong>Export</strong> your usage logs from the dashboard.</li>
+  </ul>
+
+  <h2>8. Cookies</h2>
+  <p>We use only essential session cookies required for authentication. No tracking or advertising cookies are used.</p>
+
+  <h2>9. Children</h2>
+  <p>The Service is not directed at children under 18. We do not knowingly collect data from minors.</p>
+
+  <h2>10. Changes</h2>
+  <p>We may update this policy. Material changes will be communicated by email at least 14 days before they take effect.</p>
+
+  <h2>11. Contact</h2>
+  <p>Privacy questions or deletion requests: <strong>privacy@jarvis-inference.com</strong></p>
+</div>
+
+<footer>© 2024 Jarvis Inference · <a href="/tos" style="color:var(--muted)">Terms of Service</a> · <a href="/" style="color:var(--muted)">Home</a></footer>
+</body>
+</html>

@@ -107,7 +107,7 @@
 
 <!-- Login overlay -->
 <div id="login-overlay">
-  <div class="login-box">
+  <div class="login-box" id="login-panel">
     <h2>Sign in to Jarvis Inference</h2>
     <div class="form-group">
       <label>Email</label>
@@ -115,12 +115,32 @@
     </div>
     <div class="form-group">
       <label>Password</label>
-      <input type="password" id="login-password" placeholder="Password">
+      <input type="password" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
     </div>
     <button onclick="login()">Sign In</button>
     <p id="login-error"></p>
-    <div class="login-footer">No account? <a href="/">Get started free</a></div>
+    <div class="login-footer">
+      <a href="#" onclick="showForgotPanel();return false">Forgot password?</a> ·
+      No account? <a href="/">Get started free</a>
+    </div>
   </div>
+  <div class="login-box" id="forgot-panel" style="display:none">
+    <h2>Reset password</h2>
+    <p style="color:var(--muted);font-size:.875rem;margin-bottom:1.25rem">Enter your email and we'll send a reset link.</p>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="forgot-email" placeholder="you@company.com">
+    </div>
+    <button onclick="forgotPassword()">Send Reset Link</button>
+    <p id="forgot-msg" style="font-size:.85rem;margin-top:.75rem;text-align:center"></p>
+    <div class="login-footer"><a href="#" onclick="showLoginPanel();return false">Back to sign in</a></div>
+  </div>
+</div>
+
+<!-- Email verification banner -->
+<div id="verify-banner" style="display:none;background:rgba(245,158,11,0.08);border-bottom:1px solid rgba(245,158,11,0.25);padding:.75rem 2rem;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between">
+  <span style="font-size:.875rem;color:#f59e0b">⚠ <strong>Email not verified.</strong> Your API keys won't work until you verify your email.</span>
+  <button id="resend-btn" onclick="resendVerification()" style="background:none;border:1px solid rgba(245,158,11,.4);color:#f59e0b;padding:.35rem .9rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600">Resend verification email</button>
 </div>
 
 <!-- Sidebar -->
@@ -263,6 +283,15 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
+function showForgotPanel() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('forgot-panel').style.display = 'block';
+}
+function showLoginPanel() {
+  document.getElementById('forgot-panel').style.display = 'none';
+  document.getElementById('login-panel').style.display = 'block';
+}
+
 async function login() {
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
@@ -282,6 +311,26 @@ async function login() {
   document.getElementById('user-email-display').textContent = data.user.email;
   document.getElementById('login-overlay').style.display = 'none';
   loadAll();
+}
+
+async function forgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const msg = document.getElementById('forgot-msg');
+  if (!email) { msg.textContent = 'Please enter your email'; msg.style.color = 'var(--red)'; return; }
+  const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  msg.textContent = data.message || 'Reset link sent if account exists.';
+  msg.style.color = 'var(--green)';
+}
+
+async function resendVerification() {
+  const btn = document.getElementById('resend-btn');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  const res = await api('/auth/resend-verification', { method: 'POST' });
+  btn.textContent = res?.ok ? '✓ Sent! Check your inbox' : 'Failed — try again';
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Resend verification email'; }, 5000);
 }
 
 function logout() {
@@ -310,6 +359,23 @@ async function loadAll() {
   document.getElementById('stat-input').textContent = (usage.current_period.input_tokens / 1e6).toFixed(3) + 'M';
   document.getElementById('stat-spend').textContent = `$${usage.current_period.total_cost.toFixed(4)}`;
   document.getElementById('qs-base-url').textContent = `${window.location.origin}/v1`;
+
+  // Show verification banner if email not verified
+  if (!me.is_email_verified) {
+    const banner = document.getElementById('verify-banner');
+    banner.style.display = 'flex';
+  }
+
+  // Show payment feedback from Stripe redirect
+  const params = new URLSearchParams(location.search);
+  if (params.get('payment') === 'success') {
+    alert('✅ Payment confirmed! Credits have been added to your account.');
+    history.replaceState({}, '', '/dashboard');
+  }
+  if (params.get('verified') === 'true') {
+    alert('✅ Email verified! Your API keys are now active.');
+    history.replaceState({}, '', '/dashboard');
+  }
 
   loadKeys();
 }

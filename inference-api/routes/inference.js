@@ -2,15 +2,17 @@ const express = require('express');
 const axios = require('axios');
 const supabase = require('../db');
 const { requireApiKey } = require('../middleware/apiKey');
+const { inferenceLimiter } = require('../middleware/rateLimit');
+const { sendLowBalanceEmail } = require('../services/email');
 
 const router = express.Router();
 
-const INPUT_PRICE_PER_TOKEN = 0.50 / 1_000_000;   // $0.50 per 1M input tokens
-const OUTPUT_PRICE_PER_TOKEN = 2.00 / 1_000_000;  // $2.00 per 1M output tokens
-const FREE_TRIAL_BALANCE = 5.00;                   // $5 trial credits
+const INPUT_PRICE_PER_TOKEN = 0.50 / 1_000_000;
+const OUTPUT_PRICE_PER_TOKEN = 2.00 / 1_000_000;
+const LOW_BALANCE_THRESHOLD = 1.00; // Alert when balance drops below $1
 
 // GET /v1/models
-router.get('/models', requireApiKey, async (req, res) => {
+router.get('/models', requireApiKey, async (_req, res) => {
   res.json({
     object: 'list',
     data: [
@@ -19,27 +21,26 @@ router.get('/models', requireApiKey, async (req, res) => {
         object: 'model',
         created: 1700000000,
         owned_by: 'jarvis-inference',
-        description: 'Llama 3.1 70B — high-quality open-source model',
+        description: 'Llama 3.1 70B — flagship open-source model',
       },
       {
         id: 'jarvis-llama-3.1-8b',
         object: 'model',
         created: 1700000000,
         owned_by: 'jarvis-inference',
-        description: 'Llama 3.1 8B — fast, cost-efficient model',
+        description: 'Llama 3.1 8B — fast, cost-efficient',
       },
     ],
   });
 });
 
-// POST /v1/chat/completions — OpenAI-compatible inference endpoint
-router.post('/chat/completions', requireApiKey, async (req, res) => {
+// POST /v1/chat/completions
+router.post('/chat/completions', requireApiKey, inferenceLimiter, async (req, res) => {
   const userId = req.userId;
 
-  // Check balance before processing
   const { data: user, error: userErr } = await supabase
     .from('users')
-    .select('balance, tier')
+    .select('balance, tier, is_email_verified, email')
     .eq('id', userId)
     .single();
 
@@ -47,10 +48,21 @@ router.post('/chat/completions', requireApiKey, async (req, res) => {
     return res.status(500).json({ error: { message: 'Failed to verify account', type: 'server_error' } });
   }
 
+  // Email must be verified before using the API
+  if (!user.is_email_verified) {
+    return res.status(403).json({
+      error: {
+        message: 'Email address not verified. Please check your inbox and click the verification link.',
+        type: 'authentication_error',
+        code: 'email_not_verified',
+      },
+    });
+  }
+
   if (user.balance <= 0 && user.tier !== 'enterprise') {
     return res.status(402).json({
       error: {
-        message: 'Insufficient balance. Please top up your account at /api/billing/topup',
+        message: 'Insufficient balance. Top up at /dashboard#billing',
         type: 'billing_error',
         code: 'insufficient_balance',
       },
@@ -60,30 +72,29 @@ router.post('/chat/completions', requireApiKey, async (req, res) => {
   const { model = 'jarvis-llama-3.1-70b', messages, stream = false, ...rest } = req.body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: { message: 'messages is required', type: 'invalid_request_error' } });
+    return res.status(400).json({ error: { message: '`messages` array is required', type: 'invalid_request_error' } });
   }
 
   try {
     let completionData;
 
     if (process.env.VLLM_URL) {
-      // Forward directly to vLLM (already OpenAI-compatible)
-      const vllmResponse = await axios.post(
+      const vllmRes = await axios.post(
         `${process.env.VLLM_URL}/v1/chat/completions`,
         { model, messages, stream: false, ...rest },
         { timeout: 120000 }
       );
-      completionData = vllmResponse.data;
+      completionData = vllmRes.data;
     } else {
-      // Dev fallback: convert to Anthropic API format
       completionData = await callAnthropicFallback(model, messages, rest);
     }
 
     const inputTokens = completionData.usage?.prompt_tokens || estimateTokens(messages);
     const outputTokens = completionData.usage?.completion_tokens || 0;
     const cost = inputTokens * INPUT_PRICE_PER_TOKEN + outputTokens * OUTPUT_PRICE_PER_TOKEN;
+    const newBalance = parseFloat(user.balance) - cost;
 
-    // Log usage and deduct balance (non-blocking)
+    // Log + deduct (parallel, non-blocking)
     Promise.all([
       supabase.from('usage_logs').insert({
         user_id: userId,
@@ -95,7 +106,12 @@ router.post('/chat/completions', requireApiKey, async (req, res) => {
         timestamp: new Date().toISOString(),
       }),
       supabase.rpc('deduct_balance', { user_id_param: userId, amount_param: cost }),
-    ]).catch(err => console.error('Usage tracking error:', err.message));
+    ]).then(() => {
+      // Send low balance email if balance just dropped below threshold
+      if (parseFloat(user.balance) >= LOW_BALANCE_THRESHOLD && newBalance < LOW_BALANCE_THRESHOLD) {
+        sendLowBalanceEmail(user.email, newBalance).catch(() => {});
+      }
+    }).catch(err => console.error('Usage tracking error:', err.message));
 
     res.json(completionData);
   } catch (err) {
@@ -106,7 +122,6 @@ router.post('/chat/completions', requireApiKey, async (req, res) => {
   }
 });
 
-// Convert OpenAI-format request to Anthropic and back (dev fallback when no vLLM)
 async function callAnthropicFallback(model, messages, opts) {
   if (!process.env.CLAUDE_API_KEY) {
     throw new Error('No inference backend configured. Set VLLM_URL or CLAUDE_API_KEY.');
@@ -129,24 +144,21 @@ async function callAnthropicFallback(model, messages, opts) {
     }
   );
 
-  const anthropicData = response.data;
-  // Convert to OpenAI response format
+  const d = response.data;
   return {
-    id: `chatcmpl-${anthropicData.id}`,
+    id: `chatcmpl-${d.id}`,
     object: 'chat.completion',
     created: Math.floor(Date.now() / 1000),
-    model: model,
-    choices: [
-      {
-        index: 0,
-        message: { role: 'assistant', content: anthropicData.content[0].text },
-        finish_reason: anthropicData.stop_reason === 'end_turn' ? 'stop' : anthropicData.stop_reason,
-      },
-    ],
+    model,
+    choices: [{
+      index: 0,
+      message: { role: 'assistant', content: d.content[0].text },
+      finish_reason: d.stop_reason === 'end_turn' ? 'stop' : d.stop_reason,
+    }],
     usage: {
-      prompt_tokens: anthropicData.usage.input_tokens,
-      completion_tokens: anthropicData.usage.output_tokens,
-      total_tokens: anthropicData.usage.input_tokens + anthropicData.usage.output_tokens,
+      prompt_tokens: d.usage.input_tokens,
+      completion_tokens: d.usage.output_tokens,
+      total_tokens: d.usage.input_tokens + d.usage.output_tokens,
     },
   };
 }

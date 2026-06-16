@@ -5,7 +5,6 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All key routes require dashboard auth
 router.use(requireAuth);
 
 function generateApiKey() {
@@ -27,20 +26,45 @@ router.get('/', async (req, res) => {
 // POST /api/keys
 router.post('/', async (req, res) => {
   const { name } = req.body;
-  if (!name) return res.status(400).json({ error: 'name is required' });
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'Key name is required' });
+  }
+
+  // Require verified email before creating keys
+  const { data: user } = await supabase
+    .from('users')
+    .select('is_email_verified')
+    .eq('id', req.user.userId)
+    .single();
+
+  if (!user?.is_email_verified) {
+    return res.status(403).json({
+      error: 'Email address not verified. Please verify your email before creating API keys.',
+      code: 'email_not_verified',
+    });
+  }
+
+  // Limit to 10 keys per user
+  const { count } = await supabase
+    .from('api_keys')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', req.user.userId);
+
+  if (count >= 10) {
+    return res.status(400).json({ error: 'Maximum of 10 API keys per account. Revoke unused keys first.' });
+  }
 
   const key = generateApiKey();
   const preview = key.slice(0, 18) + '...' + key.slice(-4);
 
   const { data, error } = await supabase
     .from('api_keys')
-    .insert({ user_id: req.user.userId, name, key, key_preview: preview })
+    .insert({ user_id: req.user.userId, name: name.trim(), key, key_preview: preview })
     .select('id, name, key, key_preview, created_at')
     .single();
 
   if (error) return res.status(500).json({ error: 'Failed to create key' });
 
-  // Return the full key only once at creation
   res.status(201).json(data);
 });
 
