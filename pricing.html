@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis Inference — Open-Source LLM API</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --green: #10b981;
+    --red: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; }
+
+  /* Nav */
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; background: rgba(10,10,15,0.8); }
+  .logo { font-size: 1.25rem; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+  .logo span { color: var(--text); }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem; transition: color 0.2s; }
+  nav a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: #000 !important; padding: 0.45rem 1.1rem; border-radius: 6px; font-weight: 600; }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 5rem 2rem 4rem; }
+  .hero-badge { display: inline-block; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: var(--accent); padding: 0.35rem 1rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 1.5rem; }
+  .hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; max-width: 900px; margin: 0 auto 1.25rem; }
+  .hero h1 .highlight { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 1.2rem; color: var(--muted); max-width: 600px; margin: 0 auto 2.5rem; }
+  .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn-primary { background: var(--accent); color: #000; padding: 0.85rem 2rem; border-radius: 8px; font-weight: 700; font-size: 1rem; text-decoration: none; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary { border: 1px solid var(--border); color: var(--text); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; font-size: 1rem; text-decoration: none; transition: border-color 0.2s; }
+  .btn-secondary:hover { border-color: var(--muted); }
+
+  /* Stats bar */
+  .stats { display: flex; justify-content: center; gap: 3rem; padding: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-value { font-size: 1.75rem; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
+  /* Comparison table */
+  section { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem; }
+  h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
+  .section-sub { color: var(--muted); margin-bottom: 3rem; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  thead tr { background: rgba(0,212,255,0.05); }
+  th, td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { font-size: 0.85rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  td.highlight { color: var(--accent); font-weight: 700; }
+  td.savings { color: var(--green); font-weight: 700; }
+  td.dim { color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+
+  /* Pricing cards */
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+  .pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; position: relative; }
+  .pricing-card.featured { border-color: var(--accent); }
+  .featured-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 0.2rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+  .plan-name { font-size: 1rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; }
+  .plan-price { font-size: 2.5rem; font-weight: 800; color: var(--text); }
+  .plan-price span { font-size: 1rem; font-weight: 400; color: var(--muted); }
+  .plan-tokens { color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0 1.5rem; }
+  .plan-features { list-style: none; margin-bottom: 2rem; }
+  .plan-features li { padding: 0.4rem 0; font-size: 0.9rem; color: var(--muted); }
+  .plan-features li::before { content: '✓ '; color: var(--green); font-weight: 700; }
+  .plan-cta { display: block; text-align: center; background: var(--accent); color: #000; padding: 0.75rem; border-radius: 8px; font-weight: 700; text-decoration: none; }
+  .plan-cta:hover { opacity: 0.85; }
+  .plan-cta.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .plan-cta.secondary:hover { border-color: var(--muted); }
+
+  /* Code block */
+  .code-block { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.7; overflow-x: auto; margin-top: 1rem; }
+  .code-block .comment { color: var(--muted); }
+  .code-block .keyword { color: var(--accent2); }
+  .code-block .string { color: var(--green); }
+  .code-block .func { color: var(--accent); }
+
+  /* Features grid */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+  .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+  .feature-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+  .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .feature-card p { font-size: 0.9rem; color: var(--muted); }
+
+  /* Sign up form */
+  .signup-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 3rem; max-width: 480px; margin: 0 auto; }
+  .signup-section h2 { margin-bottom: 0.5rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--muted); }
+  input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--accent); }
+  .form-submit { width: 100%; background: var(--accent); color: #000; border: none; padding: 0.85rem; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 0.5rem; transition: opacity 0.2s; }
+  .form-submit:hover { opacity: 0.85; }
+  .form-footer { text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+  .form-footer a { color: var(--accent); text-decoration: none; }
+  .api-key-result { background: var(--bg); border: 1px solid var(--green); border-radius: 8px; padding: 1rem; margin-top: 1.5rem; font-family: monospace; font-size: 0.8rem; word-break: break-all; display: none; }
+  .api-key-result .key-label { color: var(--green); font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; }
+  #status-msg { font-size: 0.85rem; margin-top: 0.75rem; text-align: center; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 640px) {
+    .stats { gap: 1.5rem; }
+    th, td { padding: 0.75rem; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Jarvis<span> Inference</span></div>
+  <div>
+    <a href="#pricing">Pricing</a>
+    <a href="#quickstart">Docs</a>
+    <a href="#signup" class="nav-cta">Get API Key</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">OPEN-SOURCE · PRIVACY-FIRST · PAY AS YOU GO</div>
+  <h1>LLM Inference for <span class="highlight">$0.50 / 1M tokens</span></h1>
+  <p>Drop-in replacement for Claude & OpenAI. Powered by Llama 3.1 70B. 83% cheaper. No data retention.</p>
+  <div class="hero-actions">
+    <a href="#signup" class="btn-primary">Start Free — $5 Credits</a>
+    <a href="#quickstart" class="btn-secondary">View Docs</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat"><div class="stat-value">83%</div><div class="stat-label">Cheaper than Claude</div></div>
+  <div class="stat"><div class="stat-value">$0.50</div><div class="stat-label">Per 1M input tokens</div></div>
+  <div class="stat"><div class="stat-value">&lt;500ms</div><div class="stat-label">Median latency</div></div>
+  <div class="stat"><div class="stat-value">OpenAI</div><div class="stat-label">Compatible format</div></div>
+</div>
+
+<!-- Comparison -->
+<section>
+  <h2>Compare the cost</h2>
+  <p class="section-sub">Same JSON format. No code changes. Just switch the base URL.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Input (per 1M tokens)</th>
+        <th>Output (per 1M tokens)</th>
+        <th>Model</th>
+        <th>Data Policy</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Jarvis Inference</strong></td>
+        <td class="highlight">$0.50</td>
+        <td class="highlight">$2.00</td>
+        <td>Llama 3.1 70B</td>
+        <td class="savings">No retention</td>
+      </tr>
+      <tr>
+        <td>Claude Sonnet 4</td>
+        <td class="dim">$3.00</td>
+        <td class="dim">$15.00</td>
+        <td>Claude Sonnet</td>
+        <td class="dim">Stored 30 days</td>
+      </tr>
+      <tr>
+        <td>OpenAI GPT-4o</td>
+        <td class="dim">$5.00</td>
+        <td class="dim">$15.00</td>
+        <td>GPT-4o</td>
+        <td class="dim">Stored 30 days</td>
+      </tr>
+      <tr>
+        <td>GPT-4o mini</td>
+        <td class="dim">$0.15</td>
+        <td class="dim">$0.60</td>
+        <td>GPT-4o mini</td>
+        <td class="dim">Stored 30 days</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Quick Start -->
+<section id="quickstart">
+  <h2>5-minute setup</h2>
+  <p class="section-sub">Drop-in replacement — change one line of code.</p>
+  <div class="code-block">
+<span class="comment"># Python — just change the base_url</span>
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+
+client = OpenAI(
+    base_url=<span class="string">"https://api.jarvis-inference.com/v1"</span>,
+    api_key=<span class="string">"sk-jarvis-your-key-here"</span>,
+)
+
+response = client.<span class="func">chat.completions.create</span>(
+    model=<span class="string">"jarvis-llama-3.1-70b"</span>,
+    messages=[{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"Hello!"</span>}]
+)
+<span class="func">print</span>(response.choices[0].message.content)
+  </div>
+  <div class="code-block" style="margin-top:1rem">
+<span class="comment"># Node.js</span>
+<span class="keyword">import</span> OpenAI <span class="keyword">from</span> <span class="string">'openai'</span>;
+
+<span class="keyword">const</span> client = <span class="keyword">new</span> <span class="func">OpenAI</span>({
+  baseURL: <span class="string">'https://api.jarvis-inference.com/v1'</span>,
+  apiKey: <span class="string">'sk-jarvis-your-key-here'</span>,
+});
+
+<span class="keyword">const</span> completion = <span class="keyword">await</span> client.chat.completions.<span class="func">create</span>({
+  model: <span class="string">'jarvis-llama-3.1-70b'</span>,
+  messages: [{ role: <span class="string">'user'</span>, content: <span class="string">'Hello!'</span> }],
+});
+  </div>
+</section>
+
+<!-- Features -->
+<section>
+  <h2>Built for developers</h2>
+  <p class="section-sub">Everything you need to ship fast.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔌</div>
+      <h3>Drop-in compatible</h3>
+      <p>Same OpenAI request/response format. Change base URL — nothing else.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Privacy-first</h3>
+      <p>Zero data retention. Requests are never logged or used for training.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Real-time usage</h3>
+      <p>Dashboard with token counts, costs per request, and balance tracking.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗝️</div>
+      <h3>Multiple API keys</h3>
+      <p>Create per-project keys. Revoke instantly. No downtime.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💳</div>
+      <h3>Pay as you go</h3>
+      <p>No minimums. No monthly commitments. Top up credits via Stripe.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚀</div>
+      <h3>Llama 3.1 70B</h3>
+      <p>State-of-the-art open-source model. Matches GPT-4o on many benchmarks.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing">
+  <h2>Simple pricing</h2>
+  <p class="section-sub">No surprises. No minimums. Cancel anytime.</p>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="plan-name">Pay as you go</div>
+      <div class="plan-price">$0.50 <span>/ 1M input tokens</span></div>
+      <div class="plan-tokens">$2.00 / 1M output tokens</div>
+      <ul class="plan-features">
+        <li>$5 free credits to start</li>
+        <li>No card required to sign up</li>
+        <li>Llama 3.1 70B model</li>
+        <li>Full usage dashboard</li>
+        <li>Multiple API keys</li>
+      </ul>
+      <a href="#signup" class="plan-cta">Start Free</a>
+    </div>
+    <div class="pricing-card featured">
+      <div class="featured-badge">MOST POPULAR</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$99 <span>/ month</span></div>
+      <div class="plan-tokens">Up to 200M tokens included</div>
+      <ul class="plan-features">
+        <li>200M tokens/month included</li>
+        <li>$0.40 / 1M input (20% discount)</li>
+        <li>Priority inference queue</li>
+        <li>Email support</li>
+        <li>SLA: 99.9% uptime</li>
+      </ul>
+      <a href="#signup" class="plan-cta">Coming Soon</a>
+    </div>
+    <div class="pricing-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price">Custom</div>
+      <div class="plan-tokens">Dedicated GPU + unlimited tokens</div>
+      <ul class="plan-features">
+        <li>Dedicated inference endpoint</li>
+        <li>Private deployment option</li>
+        <li>Custom model fine-tuning</li>
+        <li>99.99% SLA + on-call support</li>
+        <li>Volume discounts</li>
+      </ul>
+      <a href="mailto:hello@jarvis-inference.com" class="plan-cta secondary">Contact Sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- Sign up -->
+<section id="signup">
+  <div class="signup-section">
+    <h2>Get your API key</h2>
+    <p class="section-sub" style="margin-bottom:2rem">$5 free credits — no card required.</p>
+    <form id="signup-form">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Your name" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@company.com" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="8+ characters" minlength="8" required>
+      </div>
+      <button type="submit" class="form-submit">Create Account & Get API Key</button>
+      <p id="status-msg"></p>
+    </form>
+    <div class="api-key-result" id="api-key-result">
+      <div class="key-label">YOUR API KEY (save this — shown once)</div>
+      <div id="api-key-value"></div>
+    </div>
+    <div class="form-footer">Already have an account? <a href="/dashboard">Go to Dashboard</a></div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2024 Jarvis Inference · <a href="mailto:hello@jarvis-inference.com" style="color:var(--muted)">hello@jarvis-inference.com</a></p>
+</footer>
+
+<script>
+const API_BASE = window.location.origin;
+
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button');
+  const status = document.getElementById('status-msg');
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+  status.textContent = '';
+  status.style.color = '';
+
+  const payload = {
+    name: document.getElementById('name').value,
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value,
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      status.textContent = data.error || 'Sign up failed. Please try again.';
+      status.style.color = '#ef4444';
+      btn.disabled = false;
+      btn.textContent = 'Create Account & Get API Key';
+      return;
+    }
+
+    // Auto-create first API key
+    const keyRes = await fetch(`${API_BASE}/api/keys`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.token}` },
+      body: JSON.stringify({ name: 'Default Key' }),
+    });
+    const keyData = await keyRes.json();
+
+    document.getElementById('api-key-value').textContent = keyData.key;
+    document.getElementById('api-key-result').style.display = 'block';
+    document.getElementById('signup-form').style.display = 'none';
+
+    // Store token for dashboard
+    localStorage.setItem('jarvis_token', data.token);
+
+    status.textContent = '✓ Account created! Your API key is below. Save it now.';
+    status.style.color = '#10b981';
+  } catch (err) {
+    status.textContent = 'Network error. Please try again.';
+    status.style.color = '#ef4444';
+    btn.disabled = false;
+    btn.textContent = 'Create Account & Get API Key';
+  }
+});
+</script>
+</body>
+</html>

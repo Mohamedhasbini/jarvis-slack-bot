@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis Inference — Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  aside { width: 220px; border-right: 1px solid var(--border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0; }
+  .sidebar-logo { font-size: 1rem; font-weight: 700; color: var(--accent); padding: 0.75rem; margin-bottom: 1rem; }
+  .sidebar-logo span { color: var(--text); }
+  .nav-item { padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9rem; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .nav-item:hover, .nav-item.active { background: rgba(0,212,255,0.08); color: var(--text); }
+  .nav-item.active { color: var(--accent); }
+  .sidebar-bottom { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .user-email { font-size: 0.75rem; color: var(--muted); padding: 0.5rem 0.75rem; }
+  .logout-btn { width: 100%; padding: 0.6rem 0.75rem; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+  .logout-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  /* Main */
+  main { flex: 1; overflow-y: auto; }
+  .topbar { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .page-title { font-size: 1.25rem; font-weight: 700; }
+  .balance-pill { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--green); padding: 0.35rem 0.9rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+
+  .content { padding: 2rem; }
+
+  /* Stat cards */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .stat-card-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+  .stat-card-value { font-size: 1.75rem; font-weight: 800; }
+  .stat-card-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+  /* Section */
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+  .section-title { font-size: 1rem; font-weight: 700; }
+
+  /* API Keys */
+  .key-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+  .key-row:last-child { border-bottom: none; }
+  .key-name { font-weight: 600; font-size: 0.9rem; }
+  .key-preview { font-family: monospace; font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+  .key-meta { font-size: 0.75rem; color: var(--muted); }
+  .revoke-btn { background: none; border: 1px solid var(--border); color: var(--red); padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+  .revoke-btn:hover { background: rgba(239,68,68,0.08); }
+
+  /* Create key form */
+  .create-key-form { display: flex; gap: 0.75rem; }
+  .create-key-form input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none; }
+  .create-key-form input:focus { border-color: var(--accent); }
+  .create-key-form button { background: var(--accent); color: #000; border: none; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
+
+  /* New key reveal */
+  .new-key-box { background: var(--bg); border: 1px solid var(--green); border-radius: 8px; padding: 1rem; margin-top: 1rem; display: none; }
+  .new-key-box label { font-size: 0.75rem; color: var(--green); font-weight: 700; display: block; margin-bottom: 0.4rem; }
+  .new-key-box code { font-family: monospace; font-size: 0.8rem; word-break: break-all; }
+
+  /* Usage table */
+  .usage-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .usage-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  .usage-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--muted); }
+  .usage-table td:first-child { color: var(--text); }
+  .usage-table tr:last-child td { border-bottom: none; }
+
+  /* Top-up */
+  .topup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .topup-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+  .topup-card:hover { border-color: var(--accent); }
+  .topup-amount { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .topup-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Login overlay */
+  #login-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; }
+  .login-box h2 { margin-bottom: 1.5rem; }
+  .login-box .form-group { margin-bottom: 1rem; }
+  .login-box label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 600; }
+  .login-box input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none; }
+  .login-box input:focus { border-color: var(--accent); }
+  .login-box button { width: 100%; background: var(--accent); color: #000; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; }
+  #login-error { color: var(--red); font-size: 0.85rem; margin-top: 0.5rem; text-align: center; }
+  .login-footer { text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
+  .login-footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>Sign in to Jarvis Inference</h2>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@company.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Password">
+    </div>
+    <button onclick="login()">Sign In</button>
+    <p id="login-error"></p>
+    <div class="login-footer">No account? <a href="/">Get started free</a></div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside>
+  <div class="sidebar-logo">Jarvis<span> Inference</span></div>
+  <div class="nav-item active" onclick="showTab('overview')">Overview</div>
+  <div class="nav-item" onclick="showTab('keys')">API Keys</div>
+  <div class="nav-item" onclick="showTab('usage')">Usage</div>
+  <div class="nav-item" onclick="showTab('billing')">Billing</div>
+  <div class="sidebar-bottom">
+    <div class="user-email" id="user-email-display"></div>
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </div>
+</aside>
+
+<!-- Main content -->
+<main>
+  <div class="topbar">
+    <div class="page-title" id="page-title">Overview</div>
+    <div class="balance-pill">Balance: $<span id="balance-display">—</span></div>
+  </div>
+  <div class="content">
+
+    <!-- Overview tab -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-label">Balance</div>
+          <div class="stat-card-value" id="stat-balance">—</div>
+          <div class="stat-card-sub">Available credits</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Requests (MTD)</div>
+          <div class="stat-card-value" id="stat-requests">—</div>
+          <div class="stat-card-sub">This month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Input Tokens (MTD)</div>
+          <div class="stat-card-value" id="stat-input">—</div>
+          <div class="stat-card-sub">Million tokens</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Spend (MTD)</div>
+          <div class="stat-card-value" id="stat-spend">—</div>
+          <div class="stat-card-sub">This month</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Quick Start</div>
+        </div>
+        <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-size:0.8rem;line-height:1.7;overflow-x:auto;color:#94a3b8"><code>from openai import OpenAI
+
+client = OpenAI(
+    base_url="<span id="qs-base-url">https://api.jarvis-inference.com/v1</span>",
+    api_key="YOUR_API_KEY",  # from API Keys tab
+)
+
+response = client.chat.completions.create(
+    model="jarvis-llama-3.1-70b",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.choices[0].message.content)</code></pre>
+      </div>
+    </div>
+
+    <!-- API Keys tab -->
+    <div class="tab-content" id="tab-keys">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Create New Key</div>
+        </div>
+        <div class="create-key-form">
+          <input type="text" id="key-name-input" placeholder="Key name (e.g. Production)">
+          <button onclick="createKey()">+ Create Key</button>
+        </div>
+        <div class="new-key-box" id="new-key-box">
+          <label>NEW API KEY — Copy and save this now. It won't be shown again.</label>
+          <code id="new-key-value"></code>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Your API Keys</div>
+        </div>
+        <div id="keys-list"><p style="color:var(--muted);font-size:0.9rem">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- Usage tab -->
+    <div class="tab-content" id="tab-usage">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Recent Requests</div>
+        </div>
+        <div id="usage-table-container"><p style="color:var(--muted);font-size:0.9rem">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- Billing tab -->
+    <div class="tab-content" id="tab-billing">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Top Up Credits</div>
+        </div>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.25rem">Credits are added instantly after payment.</p>
+        <div class="topup-grid" id="topup-grid">
+          <div class="topup-card" onclick="topup('credits_10')">
+            <div class="topup-amount">$10</div>
+            <div class="topup-label">10 credits</div>
+          </div>
+          <div class="topup-card" onclick="topup('credits_25')">
+            <div class="topup-amount">$25</div>
+            <div class="topup-label">25 credits</div>
+          </div>
+          <div class="topup-card" onclick="topup('credits_100')">
+            <div class="topup-amount">$100</div>
+            <div class="topup-label">100 credits</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const API_BASE = window.location.origin;
+let token = localStorage.getItem('jarvis_token');
+let usageData = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+async function login() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  err.textContent = '';
+
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) { err.textContent = data.error || 'Login failed'; return; }
+
+  token = data.token;
+  localStorage.setItem('jarvis_token', token);
+  document.getElementById('user-email-display').textContent = data.user.email;
+  document.getElementById('login-overlay').style.display = 'none';
+  loadAll();
+}
+
+function logout() {
+  localStorage.removeItem('jarvis_token');
+  location.reload();
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  document.querySelector(`[onclick="showTab('${name}')"]`).classList.add('active');
+  document.getElementById('page-title').textContent = { overview: 'Overview', keys: 'API Keys', usage: 'Usage', billing: 'Billing' }[name];
+  if (name === 'usage') renderUsageTable();
+}
+
+async function loadAll() {
+  const [me, usage] = await Promise.all([api('/auth/me'), api('/api/usage')]);
+  if (!me || !usage) return;
+
+  usageData = usage;
+  document.getElementById('user-email-display').textContent = me.email;
+  document.getElementById('balance-display').textContent = parseFloat(usage.balance).toFixed(2);
+  document.getElementById('stat-balance').textContent = `$${parseFloat(usage.balance).toFixed(2)}`;
+  document.getElementById('stat-requests').textContent = usage.current_period.requests.toLocaleString();
+  document.getElementById('stat-input').textContent = (usage.current_period.input_tokens / 1e6).toFixed(3) + 'M';
+  document.getElementById('stat-spend').textContent = `$${usage.current_period.total_cost.toFixed(4)}`;
+  document.getElementById('qs-base-url').textContent = `${window.location.origin}/v1`;
+
+  loadKeys();
+}
+
+async function loadKeys() {
+  const keys = await api('/api/keys');
+  if (!keys) return;
+  const container = document.getElementById('keys-list');
+  if (keys.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No API keys yet. Create one above.</p>';
+    return;
+  }
+  container.innerHTML = keys.map(k => `
+    <div class="key-row">
+      <div>
+        <div class="key-name">${k.name}</div>
+        <div class="key-preview">${k.key_preview}</div>
+        <div class="key-meta">Created ${new Date(k.created_at).toLocaleDateString()}${k.last_used ? ` · Last used ${new Date(k.last_used).toLocaleDateString()}` : ''}</div>
+      </div>
+      <button class="revoke-btn" onclick="revokeKey('${k.id}', '${k.name}')">Revoke</button>
+    </div>
+  `).join('');
+}
+
+async function createKey() {
+  const name = document.getElementById('key-name-input').value.trim();
+  if (!name) return alert('Please enter a key name');
+  const key = await api('/api/keys', { method: 'POST', body: { name } });
+  if (!key || key.error) return alert(key?.error || 'Failed to create key');
+  document.getElementById('new-key-value').textContent = key.key;
+  document.getElementById('new-key-box').style.display = 'block';
+  document.getElementById('key-name-input').value = '';
+  loadKeys();
+}
+
+async function revokeKey(id, name) {
+  if (!confirm(`Revoke key "${name}"? This cannot be undone.`)) return;
+  await api(`/api/keys/${id}`, { method: 'DELETE' });
+  loadKeys();
+}
+
+function renderUsageTable() {
+  if (!usageData) return;
+  const rows = usageData.recent_requests;
+  const container = document.getElementById('usage-table-container');
+  if (rows.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No requests yet. Make your first API call!</p>';
+    return;
+  }
+  container.innerHTML = `
+    <table class="usage-table">
+      <thead><tr>
+        <th>Time</th><th>Model</th><th>Input Tokens</th><th>Output Tokens</th><th>Cost</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr>
+          <td>${new Date(r.timestamp).toLocaleString()}</td>
+          <td>${r.model}</td>
+          <td>${r.input_tokens.toLocaleString()}</td>
+          <td>${r.output_tokens.toLocaleString()}</td>
+          <td>$${parseFloat(r.cost).toFixed(6)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function topup(packageId) {
+  const result = await api('/api/billing/topup', { method: 'POST', body: { package_id: packageId } });
+  if (result?.checkout_url) window.location.href = result.checkout_url;
+  else alert(result?.error || 'Failed to create checkout session');
+}
+
+// Init
+if (token) {
+  document.getElementById('login-overlay').style.display = 'none';
+  loadAll();
+} else {
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+</script>
+</body>
+</html>
